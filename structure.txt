@@ -1,0 +1,19 @@
+guida_sicilia/
+├── app.py
+├── modules/
+│   ├── dashboard.py
+│   ├── invoices.py
+│   ├── calendar.py
+│   ├── email_handler.py
+│   ├── clients.py
+│   ├── automations.py
+├── data/
+│   └── db.sqlite3
+├── templates/
+│   └── invoice_template.html
+├── static/
+│   └── logo.png
+├── utils/
+│   └── pdf_generator.py
+│   └── email_utils.py
+└── requirements.txt
