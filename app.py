@@ -7,6 +7,8 @@ db.init_db()
 
 st.set_page_config(page_title="Gestione Fatture", layout="centered")
 
+st.logo("static/logo.png", link="https://yourwebsite.com") # adds my logo
+
 st.sidebar.title("📚 Menu")
 """
 menu = st.sidebar.radio("Vai a", ["Dashboard", "Fatture", "Calendario", "Email", "Clienti", "Automazioni"])
@@ -27,7 +29,7 @@ elif menu == "Automazioni":
 FOR LATER, WHEN THE OTHER SECTIONS ARE READY
 """
 st.set_page_config(page_title="Gestione Fatture", layout="centered")
-st.sidebar.title("Menu")
+
 page = st.sidebar.radio("Navigazione", ["Fatture"])
 
 if page == "Fatture":

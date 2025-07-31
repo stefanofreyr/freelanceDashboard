@@ -17,12 +17,13 @@ def show():
         data = st.date_input("Data", value=datetime.date.today())
         iva = st.number_input("IVA (%)", min_value=0.0, max_value=100.0, value=22.0)
         totale = importo * (1 + iva / 100)
+        email_cliente = st.text_input("Email cliente")
 
         st.markdown(f"**Totale con IVA:** € {totale:.2f}")
 
         submitted = st.form_submit_button("Salva Fattura")
         if submitted:
-            db.insert_invoice(cliente, descrizione, importo, str(data), iva, totale)
+            db.insert_invoice(cliente, descrizione, importo, str(data), iva, totale, email_cliente)
             st.success("✅ Fattura salvata!")
 
     st.divider()
@@ -33,17 +34,24 @@ def show():
         for f in fatture:       # shows archived invoices
             fattura = {
                 'id': f[0],
-                'cliente': f[1],
-                'descrizione': f[2],
-                'importo': f[3],
-                'data': f[4],
-                'iva': f[5],
-                'totale': f[6]
+                'numero_fattura': f[1],
+                'cliente': f[2],
+                'descrizione': f[3],
+                'importo': f[4],
+                'data': f[5],
+                'iva': f[6],
+                'totale': f[7],
+                'email_cliente': f[8]
             }
-            col1, col2 = st.columns([4, 1])
+
+            col1, col2, col3 = st.columns([4, 1, 1])
+
             with col1:
                 st.write(
-                    f"**{fattura['cliente']}** - {fattura['descrizione']} | €{fattura['importo']} + {fattura['iva']}% → **€{fattura['totale']}** ({fattura['data']})")
+                    f"**Fattura {fattura['numero_fattura']}** — {fattura['cliente']} | {fattura['descrizione']} "
+                    f"→ €{fattura['totale']:.2f} ({fattura['data']})"
+                )
+
             with col2:
                 if st.button(f"📄 PDF", key=f"pdf_{f[0]}"):
                     pdf_path = generate_invoice_pdf(fattura)
@@ -54,6 +62,19 @@ def show():
                             file_name=os.path.basename(pdf_path),
                             mime="application/pdf"
                         )
+
+            with col3:
+                from utils.email_utils import send_invoice_email
+                # In col2 (accanto al bottone "Scarica PDF")
+                if st.button(f"📧 Invia Email", key=f"email_{f[0]}"):
+                    subject = f"Fattura n. {fattura['numero_fattura']}"
+                    body = f"Ciao {fattura['cliente']},\n\nIn allegato trovi la tua fattura.\nGrazie!"
+                    success = send_invoice_email(fattura['email'], subject, body, pdf_path)
+                    if success:
+                        st.success("✅ Email inviata con successo!")
+                    else:
+                        st.error("❌ Errore nell'invio dell'email.")
+
 
     else:
         st.info("Nessuna fattura salvata.")     # when there are no invoices
