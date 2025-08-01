@@ -1,3 +1,4 @@
 streamlit~=1.47.1
 reportlab
 yagmail
+plotly

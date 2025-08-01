@@ -1,36 +1,22 @@
 import streamlit as st
-#from modules import dashboard, invoices, calendar, email_handler, clients, automations
-from modules import invoices
+from modules import landing, invoices  # puoi aggiungere qui anche altri moduli
 from utils import db
 
+# Inizializza DB
 db.init_db()
+db.patch_invoices_with_missing_fields()
 
-st.set_page_config(page_title="Gestione Fatture", layout="centered")
+# Config pagina
+st.set_page_config(page_title="Gestione Fatture", layout="wide")
 
-st.logo("static/logo.png", link="https://yourwebsite.com") # adds my logo
+# Logo
+st.logo("static/logo.png", link="https://yourwebsite.com")
 
-st.sidebar.title("📚 Menu")
-"""
-menu = st.sidebar.radio("Vai a", ["Dashboard", "Fatture", "Calendario", "Email", "Clienti", "Automazioni"])
+# Sidebar navigation
+page = st.sidebar.radio("Navigazione", ["🏠 Home", "📄 Fatture"])
 
-if menu == "Dashboard":
-    dashboard.show()
-elif menu == "Fatture":
-    invoices.show()
-elif menu == "Calendario":
-    calendar.show()
-elif menu == "Email":
-    email_handler.show()
-elif menu == "Clienti":
-    clients.show()
-elif menu == "Automazioni":
-    automations.show()
-
-FOR LATER, WHEN THE OTHER SECTIONS ARE READY
-"""
-st.set_page_config(page_title="Gestione Fatture", layout="centered")
-
-page = st.sidebar.radio("Navigazione", ["Fatture"])
-
-if page == "Fatture":
+# Mostra la pagina selezionata
+if page == "🏠 Home":
+    landing.show()
+elif page == "📄 Fatture":
     invoices.show()

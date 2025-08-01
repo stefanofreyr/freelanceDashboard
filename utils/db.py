@@ -47,8 +47,17 @@ def insert_invoice(numero_fattura, cliente, descrizione, importo, data, iva, tot
 
 def get_all_invoices():
     conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row  # This makes rows accessible by column name
     c = conn.cursor()
     c.execute('SELECT * FROM invoices ORDER BY data DESC')
-    data = c.fetchall()
+    rows = c.fetchall()
     conn.close()
-    return data
+    return [dict(row) for row in rows]
+
+def patch_invoices_with_missing_fields():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("UPDATE invoices SET totale = importo + (importo * iva / 100) WHERE totale IS NULL OR totale = ''")
+    c.execute("UPDATE invoices SET email_cliente = '' WHERE email_cliente IS NULL")
+    conn.commit()
+    conn.close()
