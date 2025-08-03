@@ -119,5 +119,10 @@ def show():
         with open(log_path, "r") as log_file:
             log_content = log_file.read()
         st.text_area("Log PEC", log_content, height=150)
+
+        if st.button("🗑️ Cancella log PEC"):
+            os.remove(log_path)
+            st.success("Log PEC cancellato.")
     else:
         st.info("Nessun invio PEC registrato.")
+

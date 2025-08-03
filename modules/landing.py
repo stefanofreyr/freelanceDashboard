@@ -56,7 +56,7 @@ def inject_styles():
 def show_hero():
     hero_html = """
     <section class="hero">
-        <h1>SicilX Innovations</h1>
+        <h1>FAi</h1>
         <p>La piattaforma per liberi professionisti</p>
         <a class="cta" href="#login">Inizia Subito</a>
     </section>
@@ -69,6 +69,7 @@ def show_services():
     st.write(
         "- 📄 Creazione e invio fatture (PDF & PEC)\n"
         "- 📨 Integrazione SDI & Agenzia delle Entrate\n"
+        "- 🤝 Gestione clienti\n"
         "- 📅 Calendario e promemoria\n"
         "- 🤖 Automazioni smart per risparmiare tempo"
     )
@@ -147,7 +148,7 @@ def show_contacts():
 
 def show_footer():
     st.markdown("---")
-    st.markdown("<center class='muted'>© 2025 SicilX Innovations – Made in Sicilia 🇮🇹</center>", unsafe_allow_html=True)
+    st.markdown("<center class='muted'>© 2025 FAi</center>", unsafe_allow_html=True)
 
 # --- ENTRYPOINT DELLA PAGINA ---
 def show():
