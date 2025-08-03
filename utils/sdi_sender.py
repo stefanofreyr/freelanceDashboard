@@ -1,32 +1,63 @@
 import smtplib
-import os
 from email.message import EmailMessage
 
-def send_via_pec(recipient, subject, body, attachment_path):
+# Configurazioni SMTP predefinite per provider PEC principali
+def get_smtp_config(provider: str):
+    configs = {
+        "Aruba": {"host": "smtp.pec.aruba.it", "port": 465, "use_ssl": True},
+        "PosteCert": {"host": "postecert.poste.it", "port": 465, "use_ssl": True},
+        "Legalmail": {"host": "smtps.legalmail.it", "port": 465, "use_ssl": True},
+        "Mailtrap": {"host": "sandbox.smtp.mailtrap.io", "port": 587, "use_ssl": False}
+    }
+    return configs.get(provider)
+
+# Invia PEC con allegato XML
+# ritorna (success: bool, message: str)
+def send_via_pec(
+    xml_path: str,
+    mittente_pec: str,
+    mittente_password: str,
+    provider: str,
+    destinatario: str = "sdi01@pec.fatturapa.it",
+    subject: str = "Invio Fattura Elettronica",
+    body: str = "In allegato trovi la fattura elettronica in formato XML.",
+):
+    config = get_smtp_config(provider)
+    if not config:
+        return False, f"Provider PEC '{provider}' non configurato."
+
+    # Prepara il messaggio
+    msg = EmailMessage()
+    msg["From"] = mittente_pec
+    msg["To"] = destinatario
+    msg["Subject"] = subject
+    msg.set_content(body)
+
+    # Leggi e allega il file XML
     try:
-        sender_email = os.getenv("PEC_EMAIL")
-        sender_password = os.getenv("PEC_PASSWORD")
-        smtp_server = "smtp.pec.it"  # Es. Aruba
-        smtp_port = 465  # Porta standard per SSL
-
-        msg = EmailMessage()
-        msg["From"] = sender_email
-        msg["To"] = recipient
-        msg["Subject"] = subject
-        msg.set_content(body)
-
-        # Aggiungi l'allegato XML
-        with open(attachment_path, "rb") as f:
-            file_data = f.read()
-            file_name = os.path.basename(attachment_path)
-        msg.add_attachment(file_data, maintype="application", subtype="xml", filename=file_name)
-
-        # Invio PEC
-        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
-            server.login(sender_email, sender_password)
-            server.send_message(msg)
-
-        return True
+        with open(xml_path, "rb") as f:
+            xml_data = f.read()
+        filename = xml_path.split("/")[-1]
+        msg.add_attachment(
+            xml_data,
+            maintype="application",
+            subtype="xml",
+            filename=filename
+        )
     except Exception as e:
-        print("Errore PEC:", e)
-        return False
+        return False, f"Errore lettura XML: {e}"
+
+    # Connessione SMTP
+    try:
+        if config["use_ssl"]:
+            server = smtplib.SMTP_SSL(config["host"], config["port"])
+        else:
+            server = smtplib.SMTP(config["host"], config["port"])
+            server.starttls()
+
+        server.login(mittente_pec, mittente_password)
+        server.send_message(msg)
+        server.quit()
+        return True, "Email PEC inviata con successo!"
+    except Exception as e:
+        return False, f"Errore invio PEC: {e}"

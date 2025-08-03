@@ -75,20 +75,54 @@ def show_services():
 
 def show_pricing():
     st.markdown('<span id="pricing" class="anchor"></span>', unsafe_allow_html=True)
-    st.markdown("## 💰 Prezzi")
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown("#### Free")
-        st.markdown("- ✔️ 3 fatture/mese\n- ❌ PEC/SDI\n\n**€0/mese**")
-        st.button("Prova Free", key="p_free")
-    with c2:
-        st.markdown("#### Pro")
-        st.markdown("- ✔️ Illimitato\n- ✔️ PEC + SDI\n\n**€14/mese**")
-        st.button("Attiva Pro", key="p_pro")
-    with c3:
-        st.markdown("#### Premium")
-        st.markdown("- ✔️ Tutto incluso\n- ✔️ PEC dedicata\n\n**€29/mese**")
-        st.button("Attiva Premium", key="p_premium")
+    st.markdown("## 💰 Piani Tariffari")
+
+    billing_cycle = st.radio("Fatturazione", ["Mensile", "Annuale"], horizontal=True)
+
+    # Prezzi
+    monthly = {"Free": 0, "Pro": 9.90, "Premium": 19.90}
+    annual = {"Free": 0, "Pro": 99, "Premium": 199}  # scontati
+    prices = monthly if billing_cycle == "Mensile" else annual
+
+    # Funzionalità per piano
+    features = [
+        ("Fatture/mese", ["3", "Illimitate", "Illimitate"]),
+        ("Invio email al cliente", ["✅", "✅", "✅"]),
+        ("Invio PEC a SDI", ["❌", "✅", "✅"]),
+        ("Calendario e promemoria", ["❌", "✅", "✅"]),
+        ("Backup cloud", ["❌", "✅ settimanale", "✅ giornaliero"]),
+        ("PEC personalizzata", ["❌", "❌", "✅"]),
+        ("Supporto prioritario", ["❌", "❌", "✅"]),
+        ("PDF personalizzati", ["❌", "❌", "✅"]),
+        ("Statistiche avanzate", ["❌", "❌", "✅"]),
+    ]
+
+    # Header con pulsante Inizia
+    cols = st.columns(3)
+    piani = ["Free", "Pro", "Premium"]
+    for i, col in enumerate(cols):
+        with col:
+            st.markdown(f"### {piani[i]}")
+            st.markdown(f"**€{prices[piani[i]]} /{'mese' if billing_cycle == 'Mensile' else 'anno'}**")
+            st.markdown(f"[Inizia](#login)", unsafe_allow_html=True)
+
+    # Tabella funzionalità
+    st.markdown("### Funzionalità incluse")
+    header_cols = st.columns([2, 1, 1, 1])
+    with header_cols[0]:
+        st.markdown("**Funzionalità**")
+    for i in range(3):
+        with header_cols[i + 1]:
+            st.markdown(f"**{piani[i]}**")
+
+    for label, vals in features:
+        row_cols = st.columns([2, 1, 1, 1])
+        with row_cols[0]:
+            st.markdown(label)
+        for i in range(3):
+            with row_cols[i + 1]:
+                st.markdown(vals[i])
+
 
 def show_login():
     st.markdown('<span id="login" class="anchor"></span>', unsafe_allow_html=True)
