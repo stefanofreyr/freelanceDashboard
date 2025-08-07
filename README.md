@@ -46,8 +46,8 @@ from invoices to calendar bookings, automated email handling, and digital invoic
 ## 📦 Getting Started
 
 ```bash
-git clone https://github.com/yourusername/fai-dashboard.git
-cd fai-dashboard
+git clone https://github.com/yourusername/freelanceDashboard.git
+cd freelanceDashboard
 pip install -r requirements.txt
 streamlit run app.py
 ```
