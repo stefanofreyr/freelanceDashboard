@@ -18,8 +18,7 @@ def inject_styles():
 
         /* HERO: tutto in un solo blocco, niente div aperti/chiusi su chiamate diverse */
         .hero {
-            background: linear-gradient(0deg, rgba(0,0,0,0.35), rgba(0,0,0,0.35)),
-                        url('https://i.postimg.cc/7YMNrBRP/logo.png') center/cover no-repeat;
+            background: linear-gradient(0deg, rgba(0,0,0,0.35), rgba(0,0,0,0.35));
             min-height: 78vh;
             color: #fff;
             display: flex;
@@ -81,7 +80,7 @@ def show_pricing():
     billing_cycle = st.radio("Fatturazione", ["Mensile", "Annuale"], horizontal=True)
 
     # Prezzi
-    monthly = {"Free": 0, "Pro": 9.90, "Premium": 19.90}
+    monthly = {"Free": 0, "Pro": 9.99, "Premium": 19.99}
     annual = {"Free": 0, "Pro": 99, "Premium": 199}  # scontati
     prices = monthly if billing_cycle == "Mensile" else annual
 
@@ -156,6 +155,6 @@ def show():
     show_hero()
     show_services()
     show_pricing()
-    show_login()
+    # show_login()
     show_contacts()
     show_footer()

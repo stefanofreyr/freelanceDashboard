@@ -6,10 +6,18 @@ from utils.pdf_generator import generate_invoice_pdf
 from utils.fatturapa_generator import generate_fattura_xml
 from utils.sdi_sender import send_via_pec
 from utils.email_utils import send_invoice_email
+from modules.landing import inject_styles
 
 
 def show():
+    if "utente" not in st.session_state:
+        st.error("⚠️ Devi effettuare il login per accedere a questa sezione.")
+        return
+    utente = st.session_state["utente"]
+
+    inject_styles()
     # === CREDENZIALI PEC ===
+    test_mode = st.sidebar.checkbox("🧪 Modalità Test (sandbox)", value=True)
     st.sidebar.markdown("### ✉️ PEC")
     pec_email = st.sidebar.text_input("PEC Mittente")
     pec_password = st.sidebar.text_input("Password PEC", type="password")
@@ -32,15 +40,19 @@ def show():
 
         submitted = st.form_submit_button("💾 Salva Fattura")
         if submitted:
-            numero = db.get_next_invoice_number()
-            db.insert_invoice(numero, cliente, descrizione, importo, str(data), iva, totale, email_cliente)
+            numero = db.get_next_invoice_number(utente)
+            db.insert_invoice(numero, cliente, descrizione, importo, str(data), iva, totale, email_cliente, utente)
             st.success("✅ Fattura salvata!")
 
     st.markdown("<div class='section-title'>📁 Archivio Fatture</div>", unsafe_allow_html=True)
-    fatture = db.get_all_invoices()
+    fatture = db.get_all_invoices(utente)
 
     if fatture:
         for f in fatture:
+            if not isinstance(f, (list, tuple)) or len(f) < 9:
+                st.warning("⚠️ Fattura malformata ignorata.")
+                continue
+
             fattura = {
                 'id': f[0],
                 'numero_fattura': f[1],
@@ -93,20 +105,24 @@ def show():
                         if not pec_email or not pec_password:
                             st.error("❌ Inserisci credenziali PEC nella sidebar.")
                         else:
-                            success, msg = send_via_pec(
-                                xml_path=xml_path,
-                                mittente_pec=pec_email,
-                                mittente_password=pec_password,
-                                provider=pec_provider
-                            )
-                            if success:
-                                st.success(msg)
-                                # Salva log invio PEC
-                                os.makedirs("logs", exist_ok=True)
-                                with open("logs/pec_log.txt", "a") as log:
-                                    log.write(f"Fattura {fattura['numero_fattura']} inviata via PEC a SDI ({fattura['data']})\n")
+                            if test_mode:
+                                st.info(
+                                    f"🧪 [Modalità Test] Fattura {fattura['numero_fattura']} simulata. Nessuna PEC inviata.")
                             else:
-                                st.error(msg)
+                                success, msg = send_via_pec(
+                                    xml_path=xml_path,
+                                    mittente_pec=pec_email,
+                                    mittente_password=pec_password,
+                                    provider=pec_provider
+                                )
+                                if success:
+                                    st.success(msg)
+                                    os.makedirs("logs", exist_ok=True)
+                                    with open("logs/pec_log.txt", "a") as log:
+                                        log.write(
+                                            f"Fattura {fattura['numero_fattura']} inviata via PEC a SDI ({fattura['data']})\n")
+                                else:
+                                    st.error(msg)
 
                 st.markdown('</div>', unsafe_allow_html=True)
     else:
