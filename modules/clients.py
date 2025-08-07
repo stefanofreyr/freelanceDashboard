@@ -28,7 +28,7 @@ def show():
                 db.update_cliente(id_cliente, nome, email, piva, indirizzo, pec, telefono, utente)
                 st.success("Cliente aggiornato.")
             else:
-                db.inserisci_cliente(nome, email, piva, indirizzo, pec, telefono, utente)
+                db.aggiungi_cliente(nome, email, piva, indirizzo, pec, telefono, utente)
                 st.success("Cliente aggiunto con successo.")
 
     st.markdown("---")
