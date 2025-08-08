@@ -43,8 +43,8 @@ def init_clienti_table():
             pec TEXT,
             telefono TEXT,
             indirizzo TEXT,
-            partita_iva TEXT,
-            codice_fiscale TEXT,
+            piva TEXT,
+            cf TEXT,
             note TEXT,
             utente TEXT
         )
@@ -93,36 +93,37 @@ def get_all_invoices(utente):
     return data
 
 
-def get_next_invoice_number():
+def get_next_invoice_number(utente):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    c.execute('SELECT MAX(numero_fattura) FROM invoices')
+    c.execute('SELECT MAX(numero_fattura) FROM invoices WHERE utente = ?', (utente,))
     result = c.fetchone()[0]
     conn.close()
     return (result or 0) + 1
 
 
+
 # === CLIENTI ===
 
-def aggiungi_cliente(nome, email, pec, telefono, indirizzo, partita_iva, codice_fiscale, note, utente):
+def aggiungi_cliente(nome, email, pec, telefono, indirizzo, piva, cf, note, utente):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     c.execute('''
-        INSERT INTO clienti (nome, email, pec, telefono, indirizzo, partita_iva, codice_fiscale, note, utente)
+        INSERT INTO clienti (nome, email, pec, telefono, indirizzo, piva, cf, note, utente)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (nome, email, pec, telefono, indirizzo, partita_iva, codice_fiscale, note, utente))
+    ''', (nome, email, pec, telefono, indirizzo, piva, cf, note, utente))
     conn.commit()
     conn.close()
 
 
-def update_cliente(cliente_id, nome, email, pec, telefono, indirizzo, partita_iva, codice_fiscale, note):
+def update_cliente(cliente_id, nome, email, pec, telefono, indirizzo, piva, cf, note):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     c.execute('''
         UPDATE clienti
-        SET nome = ?, email = ?, pec = ?, telefono = ?, indirizzo = ?, partita_iva = ?, codice_fiscale = ?, note = ?
+        SET nome = ?, email = ?, pec = ?, telefono = ?, indirizzo = ?, piva = ?, cf = ?, note = ?
         WHERE id = ?
-    ''', (nome, email, pec, telefono, indirizzo, partita_iva, codice_fiscale, note, cliente_id))
+    ''', (nome, email, pec, telefono, indirizzo, piva, cf, note, cliente_id))
     conn.commit()
     conn.close()
 
@@ -143,8 +144,8 @@ def lista_clienti(utente=None):
         "pec": r[3],
         "telefono": r[4],
         "indirizzo": r[5],
-        "partita_iva": r[6],
-        "codice_fiscale": r[7],
+        "piva": r[6],
+        "cf": r[7],
         "note": r[8]
     } for r in rows]
 
@@ -165,6 +166,29 @@ def elimina_cliente(cliente_id):
     c.execute("DELETE FROM clienti WHERE id = ?", (cliente_id,))
     conn.commit()
     conn.close()
+
+
+def fatture_per_cliente(nome_cliente, utente):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute('''
+        SELECT * FROM invoices
+        WHERE cliente = ? AND utente = ?
+        ORDER BY data DESC
+    ''', (nome_cliente, utente))
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+
+def get_cliente_by_id(cliente_id):
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM clienti WHERE id = ?", (cliente_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
 
 
 # === EVENTI ===
@@ -223,7 +247,7 @@ def elimina_evento(evento_id):
     conn.commit()
     conn.close()
 
-
+"""
 def patch_clienti_add_utente_column():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
@@ -235,6 +259,19 @@ def patch_clienti_add_utente_column():
         print("✅ Colonna 'utente' aggiunta con successo.")
     else:
         print("ℹ️ Colonna 'utente' già esistente.")
+    conn.close()
+
+def patch_clienti_add_cf_column():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(clienti)")
+    columns = [col[1] for col in c.fetchall()]
+    if "cf" not in columns:
+        c.execute("ALTER TABLE clienti ADD COLUMN cf TEXT")
+        conn.commit()
+        print("✅ Colonna 'cf' aggiunta con successo.")
+    else:
+        print("ℹ️ Colonna 'cf' già esistente.")
     conn.close()
 
 
@@ -264,3 +301,4 @@ def patch_eventi_add_utente_column():
     else:
         print("ℹ️ Colonna 'utente' già esistente in eventi.")
     conn.close()
+"""

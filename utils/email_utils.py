@@ -1,20 +1,18 @@
-import yagmail
-import os
+# utils/email_utils.py
 
-# Usa variabili d'ambiente per sicurezza!
-SENDER_EMAIL = os.getenv("SENDER_EMAIL")
-SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
+# import yagmail  # Lasciato commentato per uso futuro
 
-def send_invoice_email(to_email, subject, body, attachment_path):
+def send_invoice_email(destinatario, subject, body, allegato, email_mittente=None, password=None):
     try:
-        yag = yagmail.SMTP(SENDER_EMAIL, SENDER_PASSWORD)
-        yag.send(
-            to=to_email,
-            subject=subject,
-            contents=body,
-            attachments=attachment_path
-        )
+        # Codice reale disattivato per MVP:
+        # yag = yagmail.SMTP(user=email_mittente, password=password)
+        # yag.send(to=destinatario, subject=subject, contents=body, attachments=allegato)
+
+        print(f"[FAKE EMAIL] A: {destinatario} | Oggetto: {subject}")
+        print("Contenuto:", body)
+        print("Allegato:", allegato)
+
         return True
     except Exception as e:
-        print("Errore invio email:", e)
+        print(f"[FAKE EMAIL] Errore: {e}")
         return False

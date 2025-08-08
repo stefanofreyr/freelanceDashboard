@@ -16,7 +16,7 @@ def generate_invoice_pdf(fattura):
     data = fattura["data"]
     email = fattura["email"]
 
-    file_name = f"fattura_{numero_fattura.replace('/', '_')}.pdf"
+    file_name = f"fattura_{str(numero_fattura).replace('/', '_')}.pdf"
     file_path = os.path.join("data", "pdf", file_name)
     os.makedirs("data/pdf", exist_ok=True)
 
@@ -33,10 +33,10 @@ def generate_invoice_pdf(fattura):
 
     # Intestazione fiscale (mittente)
     intestazione = [
-        "Silican Innovations",
-        "Via dell'Etna 42, 95100 Catania (CT)",
+        "FAi Solutions",
+        "1 Oxford Circus",
         "P.IVA: 12345678901",
-        "Email: info@silican.it",
+        "Email: info@fai.com",
         "Tel: +39 095 1234567"
     ]
     for riga in intestazione:

@@ -1,4 +1,4 @@
-streamlit~=1.47.1
+streamlit
 reportlab
 yagmail
 plotly

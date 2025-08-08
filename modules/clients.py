@@ -1,75 +1,87 @@
+
 import streamlit as st
 from utils import db
-from modules.landing import inject_styles
+from collections import defaultdict
 
 def show():
-    if "utente" not in st.session_state:
-        st.error("⚠️ Devi effettuare il login per accedere a questa sezione.")
-        return
-    utente = st.session_state["utente"]
-
-    inject_styles()
     st.title("👥 Gestione Clienti")
 
-    st.markdown("### ➕ Aggiungi o Modifica Cliente")
+    if "utente" not in st.session_state:
+        st.warning("⚠️ Effettua il login per accedere.")
+        return
 
+    utente = st.session_state["utente"]
+
+    # === Legge parametri URL per modifica ===
+    id_modifica = None
+    cliente_esistente = None
+
+    if "id" in st.query_params:
+        try:
+            id_modifica = int(st.query_params["id"])
+            cliente_esistente = db.get_cliente_by_id(id_modifica)
+        except:
+            id_modifica = None
+
+    # === FORM CLIENTE ===
     with st.form("form_cliente"):
-        id_cliente = st.text_input("ID Cliente (lascia vuoto per nuovo)")
-        nome = st.text_input("Nome completo")
-        email = st.text_input("Email")
-        piva = st.text_input("Partita IVA")
-        indirizzo = st.text_input("Indirizzo")
-        pec = st.text_input("Email PEC")
-        telefono = st.text_input("Telefono")
+        id_cliente = st.text_input("ID Cliente (lascia vuoto per nuovo)", value=str(cliente_esistente["id"]) if cliente_esistente else "")
+        nome = st.text_input("Nome completo", value=cliente_esistente["nome"] if cliente_esistente else "")
+        email = st.text_input("Email", value=cliente_esistente["email"] if cliente_esistente else "")
+        pec = st.text_input("PEC", value=cliente_esistente["pec"] if cliente_esistente else "")
+        telefono = st.text_input("Telefono", value=cliente_esistente["telefono"] if cliente_esistente else "")
+        indirizzo = st.text_input("Indirizzo", value=cliente_esistente["indirizzo"] if cliente_esistente else "")
+        piva = st.text_input("Partita IVA", value=cliente_esistente["piva"] if cliente_esistente else "")
+        cf = st.text_input("Codice Fiscale", value=cliente_esistente["cf"] if cliente_esistente else "")
+        note = st.text_input("Note", value=cliente_esistente["note"] if cliente_esistente else "")
 
         submitted = st.form_submit_button("💾 Salva Cliente")
         if submitted:
             if id_cliente:
-                db.update_cliente(id_cliente, nome, email, piva, indirizzo, pec, telefono, utente)
-                st.success("Cliente aggiornato.")
+                db.update_cliente(id_cliente, nome, email, pec, telefono, indirizzo, piva, cf, note)
+                st.success("✅ Cliente aggiornato.")
             else:
-                db.aggiungi_cliente(nome, email, piva, indirizzo, pec, telefono, utente)
-                st.success("Cliente aggiunto con successo.")
+                db.aggiungi_cliente(nome, email, pec, telefono, indirizzo, piva, cf, note, utente)
+                st.success("✅ Cliente aggiunto.")
+            st.query_params.clear()
+            st.rerun()
 
-    st.markdown("---")
-    st.markdown("### 🔍 Cerca Cliente")
-    search_query = st.text_input("Cerca per nome, email o P.IVA")
+    st.divider()
 
-    st.markdown("### 📋 Elenco Clienti Raggruppati per Lettera")
+    # === LISTA CLIENTI RAGGRUPPATI ===
+    search_query = st.text_input("🔍 Cerca cliente per nome")
+    clienti = db.lista_clienti(utente)
 
-    clienti_raggruppati = db.lista_clienti_raggruppati(utente)
-    if clienti_raggruppati:
-        for iniziale in sorted(clienti_raggruppati.keys()):
-            filtered = [c for c in clienti_raggruppati[iniziale] if search_query.lower() in c['nome'].lower() or search_query.lower() in c['email'].lower() or search_query.lower() in c['piva'].lower()]
-            if filtered:
-                with st.expander(f"📁 {iniziale}"):
-                    for c in filtered:
-                        with st.container():
-                            st.markdown(f"**{c['nome']}** ({c['email']})")
-                            st.markdown(f"- P.IVA: {c['piva']}")
-                            st.markdown(f"- Indirizzo: {c['indirizzo']}")
-                            st.markdown(f"- PEC: {c['pec']}")
-                            st.markdown(f"- Telefono: {c['telefono']}")
+    if search_query:
+        clienti = [c for c in clienti if search_query.lower() in c["nome"].lower()]
 
-                            # Fatture associate
-                            fatture = db.fatture_per_cliente(c['nome'])
-                            if fatture:
-                                st.markdown("**📄 Fatture emesse:**")
-                                for f in fatture:
-                                    numero, data, totale = f
-                                    st.markdown(f"- [Fattura n. {numero} del {data} — €{totale:.2f}](#fattura_{numero})")
-                            else:
-                                st.markdown("*Nessuna fattura registrata.*")
+    raggruppati = defaultdict(list)
+    for c in clienti:
+        iniziale = c["nome"][0].upper()
+        raggruppati[iniziale].append(c)
 
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                if st.button("✏️ Modifica", key=f"mod_{c['id']}"):
-                                    st.experimental_set_query_params(id=c['id'])
-                                    st.rerun()
-                            with col2:
-                                if st.button("🗑️ Elimina", key=f"del_{c['id']}"):
-                                    db.elimina_cliente(c['id'])
-                                    st.warning("Cliente eliminato.")
-                                    st.rerun()
-    else:
-        st.info("Nessun cliente registrato.")
+    for iniziale in sorted(raggruppati):
+        with st.expander(f"📁 {iniziale}"):
+            for c in sorted(raggruppati[iniziale], key=lambda x: x["nome"]):
+                st.markdown(f"**{c['nome']}** — {c['email']} — {c['telefono']}")
+                col1, col2, col3 = st.columns([1, 1, 4])
+
+                with col1:
+                    if st.button("✏️", key=f"mod_{c['id']}"):
+                        st.query_params.update({"id": c['id']})
+                        st.rerun()
+
+                with col2:
+                    if st.button("🗑️", key=f"del_{c['id']}"):
+                        db.elimina_cliente(c['id'])
+                        st.success(f"🗑️ Cliente '{c['nome']}' eliminato.")
+                        st.rerun()
+
+                with col3:
+                    fatture = db.fatture_per_cliente(c['nome'], utente)
+                    if fatture:
+                        with st.expander("📄 Fatture collegate"):
+                            for f in fatture:
+                                st.markdown(f"- Fattura **n. {f[1]}** del {f[5]} — €{f[7]:.2f}")
+                    else:
+                        st.info("Nessuna fattura collegata.")
