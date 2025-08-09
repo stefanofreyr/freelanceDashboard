@@ -1,5 +1,0 @@
-MailTrap token
-
-1db7f3de1d237e3080863f6568f411b8
-
-for email sending

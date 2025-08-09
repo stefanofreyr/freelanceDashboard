@@ -1,0 +1,53 @@
+# ========================================
+# PYTHON
+# ========================================
+__pycache__/              # Cache compilata di Python
+*.py[cod]                 # File Python compilati
+*.pyo
+*.pyd
+*.so
+*.egg-info/               # Info pacchetto Python
+.eggs/                    # Build eggs
+dist/                     # Output build distributivi
+build/                    # Cartella build
+
+# ========================================
+# STREAMLIT SECRETS
+# ========================================
+.streamlit/secrets.toml   # File con credenziali e configurazioni private
+
+# ========================================
+# AMBIENTE VIRTUALE
+# ========================================
+venv/                     # Ambiente virtuale Python
+env/
+.venv/
+.env/
+
+# ========================================
+# DATABASE LOCALE
+# ========================================
+data/db.sqlite3           # Database SQLite con dati utenti (non condividere)
+
+# ========================================
+# OUTPUT GENERATI DALL'APP
+# ========================================
+invoices_xml/*.xml        # Fatture elettroniche generate (contengono dati reali)
+data/pdf/*.pdf            # PDF delle fatture generate
+logs/                     # Cartella log
+tmp/                      # Cartella temporanea
+*.log                     # File log generici
+
+# ========================================
+# IDE / EDITOR
+# ========================================
+.vscode/                  # Configurazioni VS Code
+.idea/                    # Configurazioni JetBrains (PyCharm, etc.)
+*.swp                     # Swap file editor tipo Vim
+.DS_Store                 # File di macOS che memorizza icone/posizione cartella
+
+# ========================================
+# TEST CACHE / CACHE VARIE
+# ========================================
+.pytest_cache/            # Cache test Pytest
+.cache/                   # Cache generica (es. lint, test)

@@ -169,9 +169,9 @@ else:
         st.session_state.page = "dashboard"
 
     # Definizione pagine + icone per option_menu
-    nav_keys   = ["dashboard", "invoices", "calendar", "clients", "documents", "emails", "automations", "taxes"]
-    nav_labels = ["Dashboard", "Fatture", "Calendario", "Clienti", "Documenti", "Email", "Automazioni", "Tasse"]
-    nav_icons  = ["speedometer2", "receipt", "calendar-event", "people", "folder", "envelope", "cpu", "cash"]
+    nav_keys   = ["dashboard", "invoices", "calendar", "clients", "documents", "emails", "automations", "taxes", "diagnostics"]
+    nav_labels = ["Dashboard", "Fatture", "Calendario", "Clienti", "Documenti", "Email", "Automazioni", "Tasse", "Diagnostica"]
+    nav_icons  = ["speedometer2", "receipt", "calendar-event", "people", "folder", "envelope", "cpu", "cash", "wrench"]
 
     # Sidebar: logout e navigazione
     with st.sidebar:
@@ -233,5 +233,8 @@ else:
         automations.show()
     elif st.session_state.page == "taxes":
         taxes.show()
+    elif st.session_state.page == "diagnostics":
+        import modules.diagnostics as diagnostics
+        diagnostics.show()
     else:
         st.warning("Pagina non trovata.")

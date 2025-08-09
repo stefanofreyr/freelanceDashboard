@@ -1,13 +1,33 @@
 import os
+import streamlit as st
 import datetime
 from xml.etree.ElementTree import Element, SubElement, ElementTree
 
-def generate_fattura_xml(fattura: dict):
+def _get_emitter_piva() -> str:
     """
-    Genera un file XML in formato FatturaPA a partire dai dati fattura forniti
+    P.IVA emittente:
+    1) .streamlit/secrets.toml -> PIVA_EMITTENTE
+    2) env var PIVA_EMITTENTE
+    3) fallback "IT01234567890"
+    """
+    return st.secrets.get("PIVA_EMITTENTE", os.environ.get("PIVA_EMITTENTE", "IT01234567890"))
+
+
+def generate_fattura_xml(fattura: dict) -> str:
+    """
+    Crea l'XML FatturaPA e lo salva in invoices_xml/.
+    Si aspetta che 'fattura' contenga almeno: numero_fattura, data, cliente, totale, ecc.
     """
     numero = str(fattura["numero_fattura"])
-    nome_file = f"IT01234567890_Fattura_{numero}.xml"  # Sostituisci con la tua P.IVA
+    piva = _get_emitter_piva()
+
+    # Assicurati che la cartella esista
+    os.makedirs("invoices_xml", exist_ok=True)
+
+    # Nome file con P.IVA emittente
+    filename = f"{piva}_Fattura_{numero}.xml"
+    xml_path = os.path.join("invoices_xml", filename)
+    nome_file = f"{piva}_Fattura_{numero}.xml" # Sostituisci con la tua P.IVA
     path = os.path.join("invoices_xml", nome_file)
 
     # === ELEMENTI PRINCIPALI ===
