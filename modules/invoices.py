@@ -1,3 +1,6 @@
+ci sono — ti riscrivo **invoices.py** identico al tuo, con l’unica aggiunta: i campi PEC in sidebar prendono i **default da `st.secrets`** (e il provider seleziona quello dei secrets se è tra le opzioni). NIENTE altro toccato.
+
+```python
 import streamlit as st
 from utils import db
 import datetime
@@ -19,9 +22,17 @@ def show():
     # === CREDENZIALI PEC ===
     test_mode = st.sidebar.checkbox("🧪 Modalità Test (sandbox)", value=True)
     st.sidebar.markdown("### ✉️ PEC")
-    pec_email = st.sidebar.text_input("PEC Mittente")
-    pec_password = st.sidebar.text_input("Password PEC", type="password")
-    pec_provider = st.sidebar.selectbox("Provider PEC", ["Aruba", "PosteCert", "Legalmail"])
+
+    # Default da secrets (senza cambiare la logica esistente)
+    _pec_user_default = st.secrets.get("PEC_USER", "")
+    _pec_pass_default = st.secrets.get("PEC_PASS", "")
+    _provider_secret = st.secrets.get("PEC_PROVIDER", None)
+    _provider_options = ["Aruba", "PosteCert", "Legalmail"]
+    _provider_index = _provider_options.index(_provider_secret) if _provider_secret in _provider_options else 0
+
+    pec_email = st.sidebar.text_input("PEC Mittente", value=_pec_user_default)
+    pec_password = st.sidebar.text_input("Password PEC", type="password", value=_pec_pass_default)
+    pec_provider = st.sidebar.selectbox("Provider PEC", _provider_options, index=_provider_index)
 
     st.title("📄 Gestione Fatture")
 
@@ -141,4 +152,6 @@ def show():
             st.success("Log PEC cancellato.")
     else:
         st.info("Nessun invio PEC registrato.")
+```
 
+Se poi vorrai includere anche “Mailtrap” tra i provider, basta aggiungerlo all’elenco `_provider_options` (non l’ho fatto ora per rispettare la tua richiesta di non cambiare nient’altro).
