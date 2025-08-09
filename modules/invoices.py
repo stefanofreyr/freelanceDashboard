@@ -27,7 +27,7 @@ def show():
     _pec_user_default = st.secrets.get("PEC_USER", "")
     _pec_pass_default = st.secrets.get("PEC_PASS", "")
     _provider_secret = st.secrets.get("PEC_PROVIDER", None)
-    _provider_options = ["Aruba", "PosteCert", "Legalmail"]
+    _provider_options = ["Aruba", "PosteCert", "Legalmail", "MailTrap"]
     _provider_index = _provider_options.index(_provider_secret) if _provider_secret in _provider_options else 0
 
     pec_email = st.sidebar.text_input("PEC Mittente", value=_pec_user_default)
@@ -152,6 +152,3 @@ def show():
             st.success("Log PEC cancellato.")
     else:
         st.info("Nessun invio PEC registrato.")
-```
-
-Se poi vorrai includere anche “Mailtrap” tra i provider, basta aggiungerlo all’elenco `_provider_options` (non l’ho fatto ora per rispettare la tua richiesta di non cambiare nient’altro).

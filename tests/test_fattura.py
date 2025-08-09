@@ -16,7 +16,7 @@ xml_path = generate_fattura_xml(fattura)
 # Validazione dopo generazione
 success, msg = validate_with_imports(
     xml_path,
-    "utils/schemas/Schema_VFPA12_V1.2.3.xsd",
+    "../utils/schemas/Schema_VFPA12_V1.2.3.xsd",
     "utils/schemas/xmldsig-core-schema.xsd"
 )
 print(msg)
