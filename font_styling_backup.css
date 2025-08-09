@@ -1,0 +1,21 @@
+/* === Google Fonts === */
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+
+/* === Font globale Manrope === */
+.stApp,
+.stApp *:not(.material-icons):not(.material-icons-outlined):not(.material-symbols-outlined) {
+    font-family: 'Manrope', sans-serif !important;
+}
+
+/* === Icone Material === */
+.material-icons,
+.material-icons-outlined,
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined' !important;
+    font-weight: normal !important;
+    font-style: normal !important;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}

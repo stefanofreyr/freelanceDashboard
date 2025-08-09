@@ -3,3 +3,4 @@ reportlab
 yagmail
 plotly
 secure-smtplib
+streamlit-option-menu

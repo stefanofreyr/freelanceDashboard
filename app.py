@@ -2,17 +2,8 @@ import streamlit as st
 from modules import landing, dashboard, invoices, clients, calendar, documents, email_handler, automations, taxes
 from utils import db, auth
 from modules.landing import inject_styles
+from streamlit_option_menu import option_menu
 
-# Inizializza DB
-db.init_db()
-
-# Adotta font nostro
-inject_styles()
-
-# Aggiorna SQL file con colonna utente
-# db.patch_clienti_add_utente_column()
-# db.patch_invoices_add_utente_column()
-# db.patch_eventi_add_utente_column()
 
 # Config pagina
 st.set_page_config(
@@ -21,11 +12,21 @@ st.set_page_config(
     initial_sidebar_state="collapsed"  # Sidebar chiusa di default su mobile
 )
 
+st.markdown("""
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+""", unsafe_allow_html=True)
+
+# Inizializza DB
+db.init_db()
+
+# Adotta font nostro
+inject_styles()
+
 # Inizializza session_state per la navigazione
 if "page" not in st.session_state:
     st.session_state.page = "dashboard"
 
-# Lista delle pagine
+# Lista delle pagine (landing/public)
 pages = {
     "dashboard": "🏠 Dashboard",
     "invoices": "📄 Fatture",
@@ -34,7 +35,7 @@ pages = {
     "documents": "📂 Documenti"
 }
 
-# Stili personalizzati verde
+# Stili personalizzati verde (solo per la parte landing/public menu)
 st.markdown("""
     <style>
     .sidebar-item {
@@ -57,7 +58,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Funzione di rendering del menu sidebar
+# Funzione di rendering del menu sidebar (landing/public)
 def render_sidebar_menu(current_page):
     for key, label in pages.items():
         selected = "sidebar-selected" if current_page == key else ""
@@ -93,7 +94,7 @@ if "utente" not in st.session_state:
     if "login_mode" not in st.session_state:
         st.session_state.login_mode = "login"
 
-    # CSS per i blocchi cliccabili
+    # CSS per i blocchi cliccabili login/registrazione
     st.markdown("""
         <style>
         .auth-option {
@@ -167,40 +168,10 @@ else:
     if "page" not in st.session_state:
         st.session_state.page = "dashboard"
 
-    # Stile personalizzato per i pulsanti sidebar
-    def sidebar_button_style(selected: bool):
-        return f"""
-            <style>
-            div[data-testid="stButton"] > button {{
-                width: 100%;
-                text-align: left;
-                padding: 0.75rem 1rem;
-                margin: 0.3rem 0;
-                border-radius: 10px;
-                font-weight: 500;
-                background-color: {'#22c55e' if selected else '#f0fdf4'};
-                color: {'white' if selected else 'black'};
-                border: none;
-            }}
-            div[data-testid="stButton"] > button:hover {{
-                background-color: {'#16a34a' if selected else '#bbf7d0'};
-                color: black;
-                cursor: pointer;
-            }}
-            </style>
-        """
-
-    # Definisci le pagine e le etichette
-    pages = {
-        "dashboard": "🏠 Dashboard",
-        "invoices": "📄 Fatture",
-        "calendar": "📅 Calendario",
-        "clients": "👥 Clienti",
-        "documents": "📂 Documenti",
-        "emails": "📬 Email",
-        "automations": "🤖 Automazioni",
-        "taxes": "💰 Tasse"
-    }
+    # Definizione pagine + icone per option_menu
+    nav_keys   = ["dashboard", "invoices", "calendar", "clients", "documents", "emails", "automations", "taxes"]
+    nav_labels = ["Dashboard", "Fatture", "Calendario", "Clienti", "Documenti", "Email", "Automazioni", "Tasse"]
+    nav_icons  = ["speedometer2", "receipt", "calendar-event", "people", "folder", "envelope", "cpu", "cash"]
 
     # Sidebar: logout e navigazione
     with st.sidebar:
@@ -208,11 +179,42 @@ else:
         st.markdown(f"✅ Utente: **{st.session_state['utente']}**")
         st.markdown("### Navigazione")
 
-        for key, label in pages.items():
-            selected = st.session_state.page == key
-            st.markdown(sidebar_button_style(selected), unsafe_allow_html=True)
-            if st.button(label, key=f"nav_{key}"):
-                st.session_state.page = key
+        try:
+            current_index = nav_keys.index(st.session_state.page)
+        except Exception:
+            current_index = 0
+
+        choice = option_menu(
+            None,
+            nav_labels,
+            icons=nav_icons,
+            menu_icon=None,
+            default_index=current_index,
+            orientation="vertical",
+            key="nav_menu",  # <-- chiave stabile: evita il doppio click
+            styles={
+                "container": {"padding": "2px 4px"},
+                "nav-link": {
+                    "padding": "6px 10px",
+                    "margin": "2px 0",
+                    "border-radius": "10px",
+                    "width": "100%",
+                    "text-align": "left",
+                    "font-weight": "500",
+                    "color": "#0f172a",  # <-- testo non selezionato
+                },
+                "nav-link-selected": {
+                    "background-color": "#f0f2f6",
+                    "color": "#0f172a",  # <-- testo selezionato leggibile
+                },
+                "icon": {"color": "#334155"},  # <-- icona non selezionata
+                # se la tua versione supporta questa chiave, ottimo; altrimenti eredita dal link
+                "icon_selected": {"color": "#0f172a"},
+            },
+        )
+
+        if choice in nav_labels:
+            st.session_state.page = nav_keys[nav_labels.index(choice)]
 
     # Mostra il contenuto della pagina selezionata
     if st.session_state.page == "dashboard":

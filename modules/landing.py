@@ -4,52 +4,158 @@ import streamlit as st
 # --- STYLES (una volta sola) ---
 def inject_styles():
     st.markdown("""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;500;700&display=swap');
-
-        /* Applica il font a tutta l'app */
-        .stApp, .stApp * {
-            font-family: 'Manrope', sans-serif !important;
-        }
-
-        body {
-            background-color: #f9f9fb;
-        }
-
-        /* HERO: tutto in un solo blocco, niente div aperti/chiusi su chiamate diverse */
-        .hero {
-            background: linear-gradient(0deg, rgba(0,0,0,0.35), rgba(0,0,0,0.35));
-            min-height: 78vh;
-            color: #fff;
+        <style>
+          /* --- Hero --- */
+          .hero {
+            position: relative;
+            min-height: 70vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             text-align: center;
-            border-radius: 12px;
-            padding: 2.5rem 1.5rem;
-        }
-        .hero h1 { font-size: clamp(2rem, 4vw, 3rem); margin: 0 0 .5rem 0; }
-        .hero p  { font-size: clamp(1rem, 2.2vw, 1.25rem); opacity: .95; margin: 0; }
-        .cta {
+            color: #fff;
+            padding: 4rem 1rem;
+            margin: 64px 0 24px;
+            border-radius: 16px;
+            overflow: hidden;
+            background:
+              linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.35)),
+              url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c') center/cover no-repeat;
+          }
+          .hero h1 {
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            margin: 0 0 0.5rem 0;
+            letter-spacing: 0.5px;
+          }
+          .hero p {
+            font-size: clamp(1rem, 2.5vw, 1.25rem);
+            opacity: 0.95;
+            margin-bottom: 1.25rem;
+          }
+          .hero .cta {
             display: inline-block;
-            margin-top: 1.25rem;
-            padding: .75rem 1.25rem;
+            margin-top: 0.75rem;
+            padding: 0.8rem 1.4rem;
             background: #e94560;
             color: #fff !important;
+            border-radius: 10px;
             text-decoration: none;
-            border-radius: 8px;
             font-weight: 700;
+            transition: transform .15s ease, filter .15s ease;
+          }
+          .hero .cta:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+          }
+
+          /* --- Anchor offset per scroll --- */
+          .anchor {
+            position: relative;
+            top: -80px;
+            visibility: hidden;
+          }
+
+          /* --- Mobile tweaks --- */
+          @media (max-width: 640px) {
+            .hero {
+              min-height: 60vh;
+              padding: 3rem 1rem;
+              margin-top: 56px;
+            }
+          }
+          
+        /* ===== SIDEBAR ULTRA-COMPATTA ===== */
+
+        /* Padding interno container */
+        [data-testid="stSidebar"] {
+          padding: 6px 8px !important;
+        }
+        
+        /* Spazio verticale minimo tra blocchi */
+        [data-testid="stSidebar"] > div {
+          margin-bottom: 6px !important;
+        }
+        
+        /* Larghezza uniforme: quasi full width */
+        [data-testid="stSidebar"] .stButton > button,
+        [data-testid="stSidebar"] .stSelectbox > div,
+        [data-testid="stSidebar"] .stMultiSelect > div,
+        [data-testid="stSidebar"] .stTextInput > div,
+        [data-testid="stSidebar"] .stNumberInput > div,
+        [data-testid="stSidebar"] .stDateInput > div,
+        [data-testid="stSidebar"] .stTimeInput > div,
+        [data-testid="stSidebar"] .stTextArea > div,
+        [data-testid="stSidebar"] .stSlider > div,
+        [data-testid="stSidebar"] .stRadio,
+        [data-testid="stSidebar"] .stCheckbox {
+          width: 96% !important;
+          margin: 0 auto !important;
+        }
+        
+        /* Input/select/textarea: altezza e padding ridotti */
+        [data-testid="stSidebar"] input,
+        [data-testid="stSidebar"] select,
+        [data-testid="stSidebar"] textarea {
+          height: 34px !important;
+          padding: 4px 8px !important;
+          font-size: 13px !important;
+          line-height: 1.2 !important;
+          border-radius: 8px !important;
+        }
+        
+        /* Textarea più alta ma compatta */
+        [data-testid="stSidebar"] textarea {
+          height: 72px !important;
+          resize: vertical;
+        }
+        
+        /* Bottoni compatti */
+        [data-testid="stSidebar"] .stButton > button {
+          padding: 6px 10px !important;
+          min-height: 34px !important;
+          font-size: 13px !important;
+          border-radius: 10px !important;
+        }
+        
+        /* Radio/checkbox: righe strette */
+        [data-testid="stSidebar"] .stRadio > label,
+        [data-testid="stSidebar"] .stCheckbox > label {
+          display: block !important;
+          padding: 4px 6px !important;
+          border-radius: 8px;
+          margin: 2px 0 !important;
+          font-size: 13px !important;
+        }
+        [data-testid="stSidebar"] .stRadio div[role="radiogroup"] > label,
+        [data-testid="stSidebar"] .stCheckbox > div {
+          margin: 2px 0 !important;
+        }
+        
+        /* Slider compatti */
+        [data-testid="stSidebar"] .stSlider {
+          padding: 2px 0 !important;
+        }
+        [data-testid="stSidebar"] .stSlider [data-baseweb="slider"] {
+          margin: 2px 0 !important;
+        }
+        
+        /* Titoli/separatori compatti */
+        [data-testid="stSidebar"] h1,
+        [data-testid="stSidebar"] h2,
+        [data-testid="stSidebar"] h3 {
+          margin: 6px 0 4px !important;
+          font-size: 1rem !important;
+        }
+        [data-testid="stSidebar"] hr {
+          margin: 6px 0 !important;
         }
 
-        .section-title { color: #1f4068; font-size: 2rem; margin: 2rem 0 1rem; }
-        .card { background: #fff; padding: 1.25rem; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); }
-        .muted { color: #667085; }
 
-        /* anchor spacing per simulare navbar alta */
-        .anchor { position: relative; top: -80px; visibility: hidden; height: 0; }
-    </style>
+        </style>
     """, unsafe_allow_html=True)
+
+
 
 # --- SEZIONI ---
 def show_hero():
