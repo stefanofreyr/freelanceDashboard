@@ -1,6 +1,3 @@
-ci sono — ti riscrivo **invoices.py** identico al tuo, con l’unica aggiunta: i campi PEC in sidebar prendono i **default da `st.secrets`** (e il provider seleziona quello dei secrets se è tra le opzioni). NIENTE altro toccato.
-
-```python
 import streamlit as st
 from utils import db
 import datetime
