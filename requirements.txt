@@ -5,3 +5,4 @@ plotly
 secure-smtplib
 streamlit-option-menu
 lxml
+bcrypt

@@ -1,6 +1,8 @@
 import streamlit as st
-from modules import landing, dashboard, invoices, clients, calendar, documents, email_handler, automations, taxes
-from utils import db, auth
+from modules import (landing, dashboard, invoices, clients, calendar,
+                     documents, email_handler, automations, taxes, diagnostics, feedback)
+from utils import db
+from utils.auth import is_authenticated, logout_button
 from modules.landing import inject_styles
 from streamlit_option_menu import option_menu
 
@@ -11,6 +13,10 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="collapsed"  # Sidebar chiusa di default su mobile
 )
+
+if not is_authenticated():
+    landing.show()
+    st.stop()
 
 st.markdown("""
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
@@ -169,9 +175,9 @@ else:
         st.session_state.page = "dashboard"
 
     # Definizione pagine + icone per option_menu
-    nav_keys   = ["dashboard", "invoices", "calendar", "clients", "documents", "emails", "automations", "taxes", "diagnostics"]
-    nav_labels = ["Dashboard", "Fatture", "Calendario", "Clienti", "Documenti", "Email", "Automazioni", "Tasse", "Diagnostica"]
-    nav_icons  = ["speedometer2", "receipt", "calendar-event", "people", "folder", "envelope", "cpu", "cash", "wrench"]
+    nav_keys   = ["dashboard", "invoices", "calendar", "clients", "documents", "emails", "automations", "taxes", "diagnostics", "feedback"]
+    nav_labels = ["Dashboard", "Fatture", "Calendario", "Clienti", "Documenti", "Email", "Automazioni", "Tasse", "Diagnostica", "Feedback"]
+    nav_icons  = ["speedometer2", "receipt", "calendar-event", "people", "folder", "envelope", "cpu", "cash", "wrench", "chat"]
 
     # Sidebar: logout e navigazione
     with st.sidebar:
@@ -216,6 +222,8 @@ else:
         if choice in nav_labels:
             st.session_state.page = nav_keys[nav_labels.index(choice)]
 
+        logout_button()
+
     # Mostra il contenuto della pagina selezionata
     if st.session_state.page == "dashboard":
         dashboard.show()
@@ -233,8 +241,11 @@ else:
         automations.show()
     elif st.session_state.page == "taxes":
         taxes.show()
+    elif st.session_state.page == "feedback":
+        feedback.show()
     elif st.session_state.page == "diagnostics":
         import modules.diagnostics as diagnostics
         diagnostics.show()
     else:
         st.warning("Pagina non trovata.")
+

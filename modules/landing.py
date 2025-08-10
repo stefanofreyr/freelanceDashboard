@@ -1,5 +1,6 @@
 # modules/landing.py
 import streamlit as st
+from utils.auth import auth_block_on_landing
 
 # --- STYLES (una volta sola) ---
 def inject_styles():
@@ -231,13 +232,8 @@ def show_pricing():
 
 
 def show_login():
-    st.markdown('<span id="login" class="anchor"></span>', unsafe_allow_html=True)
-    st.markdown("## 🔐 Login / Registrazione")
-    with st.form("login_form"):
-        st.text_input("Email", key="login_email")
-        st.text_input("Password", type="password", key="login_pwd")
-        if st.form_submit_button("Accedi / Registrati"):
-            st.success("Funzionalità in arrivo…")
+    # ancora l’ancora #login è gestita dentro auth_block_on_landing
+    auth_block_on_landing()
 
 def show_contacts():
     st.markdown('<span id="contatti" class="anchor"></span>', unsafe_allow_html=True)
@@ -261,6 +257,6 @@ def show():
     show_hero()
     show_services()
     show_pricing()
-    # show_login()
+    show_login()
     show_contacts()
     show_footer()
