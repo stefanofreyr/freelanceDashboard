@@ -5,10 +5,12 @@ from calendar import monthrange
 from modules.landing import inject_styles
 
 def show():
-    if "utente" not in st.session_state:
+    if "user" not in st.session_state:
         st.error("⚠️ Devi effettuare il login per accedere a questa sezione.")
         return
-    utente = st.session_state["utente"]
+    user = st.session_state["user"]
+    user_id = user["id"]
+    utente = user["email"]
 
     st.title("📅 Calendario Eventi")
 
@@ -24,11 +26,11 @@ def show():
 
         submitted = st.form_submit_button("Salva Evento")
         if submitted:
-            db.aggiungi_evento(titolo, str(data), str(ora), cliente, descrizione, utente)
+            db.aggiungi_evento(titolo, str(data), ora, cliente, descrizione, utente=utente, user_id=user_id)
             st.success("✅ Evento salvato!")
 
     st.divider()
-    eventi = db.lista_eventi_futuri(utente)
+    eventi = db.lista_eventi_futuri_by_user_id(user_id)
     oggi = datetime.date.today()
 
     vista = st.radio("🖥️ Seleziona visualizzazione calendario:", ["Vista Settimanale", "Vista Mensile"], horizontal=True)

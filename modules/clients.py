@@ -1,16 +1,23 @@
 
 import streamlit as st
+import re
 from utils import db
 from collections import defaultdict
 
 def show():
     st.title("👥 Gestione Clienti")
 
-    if "utente" not in st.session_state:
+    def is_email(s: str) -> bool:
+        return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", (s or "").strip()))
+
+
+    if "user" not in st.session_state:
         st.warning("⚠️ Effettua il login per accedere.")
         return
 
-    utente = st.session_state["utente"]
+    user = st.session_state["user"]
+    user_id = user["id"]
+    utente = user["email"]  # compat se stampi il nome utente
 
     # === Legge parametri URL per modifica ===
     id_modifica = None
@@ -37,11 +44,23 @@ def show():
 
         submitted = st.form_submit_button("💾 Salva Cliente")
         if submitted:
+            errors = []
+            if not cliente.strip():
+                errors.append("Il cliente è obbligatorio.")
+            if importo <= 0:
+                errors.append("L'importo deve essere maggiore di 0.")
+            if not (0 <= iva <= 100):
+                errors.append("L'IVA deve essere tra 0 e 100.")
+            if email_cliente and not _is_email(email_cliente):
+                errors.append("L'email cliente non è valida.")
+            if errors:
+                for e in errors: st.warning(f"• {e}")
+                st.stop()
             if id_cliente:
                 db.update_cliente(id_cliente, nome, email, pec, telefono, indirizzo, piva, cf, note)
                 st.success("✅ Cliente aggiornato.")
             else:
-                db.aggiungi_cliente(nome, email, pec, telefono, indirizzo, piva, cf, note, utente)
+                db.aggiungi_cliente(nome, email, pec, telefono, indirizzo, piva, cf, note, utente=utente, user_id=user_id)
                 st.success("✅ Cliente aggiunto.")
             st.query_params.clear()
             st.rerun()

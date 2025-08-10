@@ -22,7 +22,7 @@ def inject_styles():
             overflow: hidden;
             background:
               linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.35)),
-              url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c') center/cover no-repeat;
+              url('https://shorturl.at/z95wq') center/cover no-repeat;
           }
           .hero h1 {
             font-size: clamp(2rem, 5vw, 3.2rem);

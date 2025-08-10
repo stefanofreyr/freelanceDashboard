@@ -27,7 +27,7 @@ def _conn():
     conn.execute("PRAGMA foreign_keys=ON;")
     return conn
 
-def _init_users_table():
+def init_users_table():
     """Crea la tabella users se non esiste."""
     with _conn() as c:
         c.executescript(
@@ -51,7 +51,7 @@ def create_user(email: str, password: str, display_name: str = "") -> None:
     email = (email or "").strip().lower()
     if not email or not password:
         raise ValueError("Email e password sono obbligatorie")
-    _init_users_table()
+    init_users_table()
     ph = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     with _conn() as c:
         c.execute(
@@ -61,7 +61,7 @@ def create_user(email: str, password: str, display_name: str = "") -> None:
         c.commit()
 
 def get_user_by_email(email: str) -> Optional[sqlite3.Row]:
-    _init_users_table()
+    init_users_table()
     with _conn() as c:
         return c.execute(
             "SELECT id, email, password_hash, display_name FROM users WHERE email=?",

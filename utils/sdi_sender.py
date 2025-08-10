@@ -1,5 +1,7 @@
 import smtplib
 from email.message import EmailMessage
+from utils.email_utils import is_test_mode
+import os
 
 # Configurazioni SMTP predefinite per provider PEC principali
 def get_smtp_config(provider: str):
@@ -22,6 +24,12 @@ def send_via_pec(
     subject: str = "Invio Fattura Elettronica",
     body: str = "In allegato trovi la fattura elettronica in formato XML.",
 ):
+    if is_test_mode():
+        os.makedirs("logs", exist_ok=True)
+        with open("logs/pec_log.txt", "a", encoding="utf-8") as f:
+            f.write(f"[TEST] SDI simulato | file={xml_path}\n")
+        return True, "🧪 Modalità test: invio PEC simulato."
+
     config = get_smtp_config(provider)
     if not config:
         return False, f"Provider PEC '{provider}' non configurato."

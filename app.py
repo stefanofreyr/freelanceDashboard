@@ -1,6 +1,6 @@
 import streamlit as st
 from modules import (landing, dashboard, invoices, clients, calendar,
-                     documents, email_handler, automations, taxes, diagnostics, feedback)
+                     documents, email_handler, automations, taxes, diagnostics, feedback, settings)
 from utils import db
 from utils.auth import is_authenticated,require_auth, logout_button
 from modules.landing import inject_styles
@@ -182,9 +182,9 @@ else:
         st.session_state.page = "dashboard"
 
     # Definizione pagine + icone per option_menu
-    nav_keys   = ["dashboard", "invoices", "calendar", "clients", "documents", "emails", "automations", "taxes", "diagnostics", "feedback"]
-    nav_labels = ["Dashboard", "Fatture", "Calendario", "Clienti", "Documenti", "Email", "Automazioni", "Tasse", "Diagnostica", "Feedback"]
-    nav_icons  = ["speedometer2", "receipt", "calendar-event", "people", "folder", "envelope", "cpu", "cash", "wrench", "chat"]
+    nav_keys   = ["dashboard", "invoices", "calendar", "clients", "documents", "emails", "automations", "taxes", "settings", "diagnostics", "feedback"]
+    nav_labels = ["Dashboard", "Fatture", "Calendario", "Clienti", "Documenti", "Email", "Automazioni", "Tasse", "Impostazioni", "Diagnostica", "Feedback"]
+    nav_icons  = ["speedometer2", "receipt", "calendar-event", "people", "folder", "envelope", "cpu", "cash", "gear", "wrench", "chat"]
 
     # Sidebar: logout e navigazione
     with st.sidebar:
@@ -229,8 +229,6 @@ else:
         if choice in nav_labels:
             st.session_state.page = nav_keys[nav_labels.index(choice)]
 
-
-
     # Mostra il contenuto della pagina selezionata
     if st.session_state.page == "dashboard":
         dashboard.show()
@@ -248,6 +246,8 @@ else:
         automations.show()
     elif st.session_state.page == "taxes":
         taxes.show()
+    elif st.session_state.page == "settings":
+        settings.show()
     elif st.session_state.page == "feedback":
         feedback.show()
     elif st.session_state.page == "diagnostics":

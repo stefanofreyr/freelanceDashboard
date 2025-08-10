@@ -2,18 +2,27 @@ import streamlit as st
 from utils import db
 import datetime
 import os
+import re
 from utils.pdf_generator import generate_invoice_pdf
 from utils.fatturapa_generator import generate_fattura_xml
 from utils.sdi_sender import send_via_pec
 from utils.email_utils import send_invoice_email
 from modules.landing import inject_styles
-
+from utils.email_utils import is_test_mode
 
 def show():
-    if "utente" not in st.session_state:
+    def is_email(s: str) -> bool:
+        return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", (s or "").strip()))
+
+    if is_test_mode():
+        st.info("🧪 Modalità test attiva: gli invii email/PEC sono solo simulati.")
+
+    if "user" not in st.session_state:
         st.error("⚠️ Devi effettuare il login per accedere a questa sezione.")
         return
-    utente = st.session_state["utente"]
+    user = st.session_state["user"]
+    user_id = user["id"]
+    utente = user["email"]
 
     inject_styles()
     # === CREDENZIALI PEC ===
@@ -48,12 +57,28 @@ def show():
 
         submitted = st.form_submit_button("💾 Salva Fattura")
         if submitted:
-            numero = db.get_next_invoice_number(utente)
-            db.insert_invoice(numero, cliente, descrizione, importo, str(data), iva, totale, email_cliente, utente)
+            anno = int(str(data)[:4])
+            numero = db.get_next_invoice_number_for_year(utente, anno)
+            db.insert_invoice(numero, cliente, descrizione, importo, str(data), iva, totale, email_cliente,
+                              utente=utente, user_id=user_id, anno=anno)
+
+            errors = []
+            if not cliente.strip():
+                errors.append("Il cliente è obbligatorio.")
+            if importo <= 0:
+                errors.append("L'importo deve essere maggiore di 0.")
+            if not (0 <= iva <= 100):
+                errors.append("L'IVA deve essere tra 0 e 100.")
+            if email_cliente and not is_email(email_cliente):
+                errors.append("L'email cliente non è valida.")
+            if errors:
+                for e in errors: st.warning(f"• {e}")
+                st.stop()
             st.success("✅ Fattura salvata!")
 
     st.markdown("<div class='section-title'>📁 Archivio Fatture</div>", unsafe_allow_html=True)
-    fatture = db.get_all_invoices(utente)
+
+    fatture = db.get_all_invoices_by_user_id(user_id)
 
     if fatture:
         for f in fatture:

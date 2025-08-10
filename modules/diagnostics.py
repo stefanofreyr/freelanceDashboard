@@ -1,7 +1,19 @@
 import streamlit as st
 import os
+from utils.backup import build_backup_zip_for_user
 
 def show():
+    if "user" not in st.session_state:
+        st.warning("Effettua il login.");
+        return
+    email = st.session_state["user"]["email"]
+    st.title("💾 Backup dati")
+    if st.button("📦 Crea backup ZIP"):
+        data, fname = build_backup_zip_for_user(email)
+        st.download_button("Scarica backup", data=data, file_name=fname, mime="application/zip")
+
+    st.divider()
+    
     st.title("🔍 Diagnostica sistema")
 
     st.markdown("## ✅ Configurazione Secrets")

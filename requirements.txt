@@ -6,3 +6,4 @@ secure-smtplib
 streamlit-option-menu
 lxml
 bcrypt
+pytest
