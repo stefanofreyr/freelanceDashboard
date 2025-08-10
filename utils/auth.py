@@ -9,7 +9,8 @@ import bcrypt
 # =========================
 # Config
 # =========================
-DB_PATH = "data/fatture.db"
+DB_PATH = r"C:\Users\ste_c\PycharmProjects\freelanceDashboard\data\fatture.db"
+
 SESSION_TTL = 60 * 60 * 8  # 8 ore
 ALLOW_SELF_SIGNUP = False  # False per i primi tester (crei tu gli account)
 
