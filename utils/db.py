@@ -1,10 +1,11 @@
-
+import pathlib
 import sqlite3
 import datetime
-from utils.auth import init_users_table
 
 DB_NAME = "data/fatture.db"
 
+BASE_DIR = pathlib.Path(__file__).resolve().parents[1]
+DB_PATH = str(BASE_DIR / "data" / "fatture.db")
 
 def init_db():
     init_users_table()
@@ -15,7 +16,29 @@ def init_db():
     patch_add_user_id()
     backfill_user_id()
 
+def _conn():
+    """Connessione SQLite con FK attive."""
+    pathlib.Path("data").mkdir(exist_ok=True)
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys=ON;")
+    return conn
 
+def init_users_table():
+    """Crea la tabella users se non esiste."""
+    with _conn() as c:
+        c.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              email TEXT NOT NULL UNIQUE,
+              password_hash TEXT NOT NULL,
+              display_name TEXT,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            """
+        )
+        c.commit()
 
 def init_invoice_table():
     conn = sqlite3.connect(DB_NAME)
@@ -81,11 +104,41 @@ def init_eventi_table():
 def get_user_id_by_email(email: str) -> int | None:
     if not email:
         return None
+    norm = (email or "").strip().lower()   # aggiungi normalizzazione
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    row = c.execute("SELECT id FROM users WHERE email=?", (email,)).fetchone()
+    row = c.execute("SELECT id FROM users WHERE email=?", (norm,)).fetchone()
     conn.close()
     return row[0] if row else None
+
+
+def get_user_by_email(email: str):
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    norm = (email or "").strip().lower()
+    row = c.execute("SELECT * FROM users WHERE email=?", (norm,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+
+def create_user(email: str, hashed_pw: bytes, display_name: str) -> int | None:
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    norm = (email or "").strip().lower()          # ⬅ normalizza
+    # salva come testo ASCII, non bytes (bcrypt produce ASCII-safe)
+    if isinstance(hashed_pw, bytes):
+        hashed_pw = hashed_pw.decode()
+    c.execute(
+        "INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)",
+        (norm, hashed_pw, display_name)
+    )
+    uid = c.lastrowid
+    conn.commit()
+    conn.close()
+    return uid
+
 
 # === FATTURE ===
 
@@ -106,8 +159,8 @@ def insert_invoice(numero, cliente, descrizione, importo, data, iva, totale, ema
         INSERT INTO invoices (numero_fattura, cliente, descrizione, importo, data, iva, totale, email, utente, user_id, anno)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (numero, cliente, descrizione, importo, data, iva, totale, email, utente, user_id, anno))
-     conn.commit()
-     conn.close()
+    conn.commit()
+    conn.close()
 
 
 def get_all_invoices(utente):
@@ -122,11 +175,26 @@ def get_all_invoices(utente):
 
 def get_all_invoices_by_user_id(user_id: int):
     conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute('SELECT * FROM invoices WHERE user_id = ? ORDER BY data DESC', (user_id,))
-    rows = c.fetchall()
+    rows = c.execute(
+        'SELECT * FROM invoices WHERE user_id = ? ORDER BY data DESC',
+        (user_id,)
+    ).fetchall()
     conn.close()
-    return rows
+    return [dict(r) for r in rows]
+
+
+def get_invoice_totals_by_user_id(user_id: int):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    row = c.execute(
+        'SELECT COUNT(*), COALESCE(SUM(totale),0) FROM invoices WHERE user_id=?',
+        (user_id,)
+    ).fetchone()
+    conn.close()
+    return {"count": row[0], "sum": float(row[1] or 0.0)}
+
 
 
 def get_next_invoice_number(utente):
@@ -215,12 +283,12 @@ def lista_clienti_by_user_id(user_id: int):
     } for r in rows]
 
 
-def lista_clienti_raggruppati(utente):
+def lista_clienti_raggruppati_by_user_id(user_id: int):
     clienti = lista_clienti_by_user_id(user_id)
     from collections import defaultdict
     raggruppati = defaultdict(list)
     for cliente in clienti:
-        iniziale = cliente['nome'][0].upper()
+        iniziale = (cliente['nome'][:1] or "#").upper()
         raggruppati[iniziale].append(cliente)
     return dict(raggruppati)
 
@@ -258,7 +326,7 @@ def get_cliente_by_id(cliente_id):
 
 # === EVENTI ===
 
-def def aggiungi_evento(titolo, data, ora, cliente, descrizione, utente=None, user_id=None):
+def aggiungi_evento(titolo, data, ora, cliente, descrizione, utente=None, user_id=None):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     if user_id is None and utente:
@@ -358,9 +426,11 @@ def init_settings_table():
 
 
 def get_settings(email):
-    conn = sqlite3.connect(DB_NAME); c = conn.cursor()
+    conn = sqlite3.connect(DB_NAME); conn.row_factory = sqlite3.Row
+    c = conn.cursor()
     row = c.execute("SELECT * FROM settings WHERE email=?", (email,)).fetchone()
-    conn.close(); return row
+    conn.close()
+    return dict(row) if row else None
 
 
 def upsert_settings(email, **kwargs):

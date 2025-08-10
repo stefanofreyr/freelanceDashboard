@@ -1,8 +1,9 @@
 import streamlit as st
-from modules import (landing, dashboard, invoices, clients, calendar,
+from modules import (landing, dashboard, invoices, clients, usercalendar,
                      documents, email_handler, automations, taxes, diagnostics, feedback, settings)
 from utils import db
-from utils.auth import is_authenticated,require_auth, logout_button
+import utils.auth
+from utils.auth import is_authenticated, require_auth, logout_button
 from modules.landing import inject_styles
 from streamlit_option_menu import option_menu
 
@@ -20,9 +21,12 @@ if not is_authenticated():
 
 # Utente loggato: controllo sessione valida
 user = require_auth()
+if not user or "id" not in user:
+    st.error("⚠️ Sessione non valida. Effettua di nuovo il login.")
+    st.stop()
 
-# Sidebar info + pulsante logout
-st.sidebar.caption(f"Utente: **{user['name']}**")
+st.sidebar.caption(f"Utente: **{user.get('name')}**  \nEmail: {user.get('email')}")
+user_id = user["id"]
 logout_button(location="sidebar")  # SOLO qui
 
 st.markdown("""
@@ -38,15 +42,6 @@ inject_styles()
 # Inizializza session_state per la navigazione
 if "page" not in st.session_state:
     st.session_state.page = "dashboard"
-
-# Lista delle pagine (landing/public)
-pages = {
-    "dashboard": "🏠 Dashboard",
-    "invoices": "📄 Fatture",
-    "calendar": "📅 Calendario",
-    "clients": "👥 Clienti",
-    "documents": "📂 Documenti"
-}
 
 # Stili personalizzati verde (solo per la parte landing/public menu)
 st.markdown("""
@@ -95,17 +90,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Aggiorna pagina se cliccato
-selected_page = st.query_params.get("selected_page", [None])[0]
-if selected_page in pages:
-    st.session_state.page = selected_page
-
-if "utente" not in st.session_state:
-    # Mostra la landing pubblica
-    landing.show()
+#selected_page = st.query_params.get("selected_page", [None])[0]
+#if selected_page in pages:
+#    st.session_state.page = selected_page
 
     # Inizializza stato per la pagina di login
-    if "login_mode" not in st.session_state:
-        st.session_state.login_mode = "login"
+if "login_mode" not in st.session_state:
+    st.session_state.login_mode = "login"
 
     # CSS per i blocchi cliccabili login/registrazione
     st.markdown("""
@@ -170,9 +161,9 @@ if "utente" not in st.session_state:
 
     # Mostra form corrispondente
     if st.session_state.login_mode == "login":
-        auth.login_form()
+        utils.auth.login_form()
     else:
-        auth.registration_form()
+        utils.auth.registration_form()
 
 
 # === Se utente loggato ===
@@ -182,16 +173,12 @@ else:
         st.session_state.page = "dashboard"
 
     # Definizione pagine + icone per option_menu
-    nav_keys   = ["dashboard", "invoices", "calendar", "clients", "documents", "emails", "automations", "taxes", "settings", "diagnostics", "feedback"]
+    nav_keys   = ["dashboard", "invoices", "usercalendar", "clients", "documents", "emails", "automations", "taxes", "settings", "diagnostics", "feedback"]
     nav_labels = ["Dashboard", "Fatture", "Calendario", "Clienti", "Documenti", "Email", "Automazioni", "Tasse", "Impostazioni", "Diagnostica", "Feedback"]
     nav_icons  = ["speedometer2", "receipt", "calendar-event", "people", "folder", "envelope", "cpu", "cash", "gear", "wrench", "chat"]
 
     # Sidebar: logout e navigazione
     with st.sidebar:
-        # Sidebar info + pulsante logout
-        #st.sidebar.caption(f"Utente: **{user['name']}**")
-        #logout_button(location="sidebar")  # SOLO qui
-
         try:
             current_index = nav_keys.index(st.session_state.page)
         except Exception:
@@ -234,8 +221,8 @@ else:
         dashboard.show()
     elif st.session_state.page == "invoices":
         invoices.show()
-    elif st.session_state.page == "calendar":
-        calendar.show()
+    elif st.session_state.page == "usercalendar":
+        usercalendar.show()
     elif st.session_state.page == "clients":
         clients.show()
     elif st.session_state.page == "documents":

@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Optional, Dict
 import streamlit as st
 import bcrypt
+import utils.db
+from utils.db import get_user_by_email, init_users_table, create_user
 
 # =========================
 # Config
@@ -17,70 +19,32 @@ SESSION_TTL = 60 * 60 * 8  # 8 ore
 ALLOW_SELF_SIGNUP = False  # False per i primi tester (crei tu gli account)
 
 # =========================
-# DB helpers
-# =========================
-def _conn():
-    """Connessione SQLite con FK attive."""
-    pathlib.Path("data").mkdir(exist_ok=True)
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys=ON;")
-    return conn
-
-def init_users_table():
-    """Crea la tabella users se non esiste."""
-    with _conn() as c:
-        c.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS users (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              email TEXT NOT NULL UNIQUE,
-              password_hash TEXT NOT NULL,
-              display_name TEXT,
-              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-            """
-        )
-        c.commit()
-
-# =========================
 # Core API
 # =========================
-def create_user(email: str, password: str, display_name: str = "") -> None:
-    """Crea un utente con password hashata (bcrypt)."""
-    email = (email or "").strip().lower()
+def verify_login(email: str, password: str):
+    """Verifica le credenziali e restituisce il dict utente completo se valide, altrimenti None."""
     if not email or not password:
-        raise ValueError("Email e password sono obbligatorie")
-    init_users_table()
-    ph = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-    with _conn() as c:
-        c.execute(
-            "INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)",
-            (email, ph, (display_name or "").strip()),
-        )
-        c.commit()
-
-def get_user_by_email(email: str) -> Optional[sqlite3.Row]:
-    init_users_table()
-    with _conn() as c:
-        return c.execute(
-            "SELECT id, email, password_hash, display_name FROM users WHERE email=?",
-            ((email or "").strip().lower(),),
-        ).fetchone()
-
-def verify_login(email: str, password: str) -> Optional[Dict]:
-    """Ritorna un dict {id,email,name} se ok, altrimenti None."""
-    row = get_user_by_email(email)
-    if not row:
         return None
-    ok = bcrypt.checkpw((password or "").encode(), row["password_hash"].encode())
-    if not ok:
+
+    norm = (email or "").strip().lower()
+    user = get_user_by_email(norm)
+    if not user:
         return None
-    return {
-        "id": row["id"],
-        "email": row["email"],
-        "name": row["display_name"] or row["email"],
-    }
+
+    stored_hash = user.get("password_hash")
+    if not stored_hash:
+        return None
+
+    if isinstance(stored_hash, str):
+        stored_hash = stored_hash.encode()
+
+    try:
+        if bcrypt.checkpw(password.encode(), stored_hash):
+            return user
+    except ValueError:
+        return None
+
+    return None
 
 # =========================
 # Session helpers
@@ -101,23 +65,27 @@ def current_user() -> Optional[Dict]:
 def _touch_session():
     st.session_state["last_seen"] = int(time.time())
 
+
 def require_auth():
-    """
-    Da usare all'inizio delle pagine *protette* (non nella landing):
-    se non loggato, mostra un avviso e interrompe il rendering.
-    """
-    if not is_authenticated():
-        st.info("Devi effettuare l’accesso per continuare.")
-        st.stop()
-    # timeout sessione
-    now = int(time.time())
-    last = st.session_state.get("last_seen", 0)
-    if now - last > SESSION_TTL:
-        st.session_state.clear()
-        st.warning("Sessione scaduta. Accedi di nuovo.")
-        st.stop()
-    _touch_session()
-    return current_user()
+    """Garantisce che esista st.session_state['user'] con id/email/name."""
+    if "user" in st.session_state and isinstance(st.session_state["user"], dict):
+        if "id" in st.session_state["user"]:
+            return st.session_state["user"]
+
+    # compat con vecchio 'utente'
+    email = st.session_state.get("utente")
+    if email:
+        uid = get_user_id_by_email(email)
+        if uid:
+            st.session_state["user"] = {
+                "id": uid,
+                "email": email,
+                "name": email
+            }
+            return st.session_state["user"]
+
+    st.stop()
+
 
 def logout_button(location: str = "sidebar"):
     area = st.sidebar if location == "sidebar" else st
@@ -129,45 +97,75 @@ def logout_button(location: str = "sidebar"):
 # UI blocks per la landing
 # =========================
 def login_form():
-    st.markdown("#### Accedi")
-    with st.form("login_form", clear_on_submit=False):
-        email = st.text_input("Email", key="login_email")
-        pwd = st.text_input("Password", type="password", key="login_pwd")
-        submitted = st.form_submit_button("Accedi", type="primary", use_container_width=True)
-    if submitted:
-        user = verify_login(email, pwd)
-        if user:
-            # compat: manteniamo anche 'utente' come nome visualizzato
-            st.session_state["user"] = user
-            st.session_state["utente"] = user["name"]
-            _touch_session()
-            st.success(f"Benvenuto, {user['name']}!")
+    st.subheader("🔐 Login")
+
+    with st.form("login_form"):
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
+        submit = st.form_submit_button("Accedi")
+
+    if submit:
+        if not email or not password:
+            st.warning("Inserisci email e password.")
+            st.stop()
+
+        user_data = verify_login(email, password)
+        if user_data:
+            st.session_state["user"] = {
+                "id": user_data["id"],
+                "email": user_data["email"],
+                "name": user_data.get("display_name") or user_data["email"]
+            }
+            # compat: mantieni 'utente' finché non rimuovi tutte le vecchie chiamate
+            st.session_state["utente"] = user_data["email"]
+
+            st.success("✅ Login effettuato!")
             st.rerun()
         else:
-            st.error("Credenziali non valide.")
+            st.error("❌ Credenziali non valide.")
 
 def registration_form():
-    st.markdown("#### Crea un nuovo account")
-    with st.form("signup_form", clear_on_submit=False):
-        name = st.text_input("Nome visibile (opzionale)", key="signup_name")
-        email = st.text_input("Email", key="signup_email")
-        p1 = st.text_input("Password", type="password", key="signup_p1")
-        p2 = st.text_input("Ripeti password", type="password", key="signup_p2")
-        submitted = st.form_submit_button("Registrati", use_container_width=True)
-    if submitted:
-        if not email or not p1:
-            st.warning("Email e password sono obbligatorie.")
-            return
-        if p1 != p2:
-            st.warning("Le password non coincidono.")
-            return
-        try:
-            create_user(email, p1, name)
-            st.success("Account creato. Ora effettua il login.")
-        except sqlite3.IntegrityError:
-            st.warning("Esiste già un account con questa email.")
-        except Exception as ex:
-            st.error(f"Errore durante la registrazione: {ex}")
+    st.subheader("📝 Registrazione")
+
+    with st.form("registration_form"):
+        display_name = st.text_input("Nome visualizzato")
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
+        confirm_password = st.text_input("Conferma Password", type="password")
+        submit = st.form_submit_button("Registrati")
+
+    if submit:
+        if not display_name or not email or not password or not confirm_password:
+            st.warning("Compila tutti i campi.")
+            st.stop()
+
+        if password != confirm_password:
+            st.error("Le password non coincidono.")
+            st.stop()
+
+        if get_user_by_email(email):
+            st.error("Email già registrata.")
+            st.stop()
+
+        # Hash della password
+        hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+
+        # Crea utente e recupera ID
+        user_id = create_user(email, hashed_pw, display_name)
+
+        if user_id:
+            # Metti subito in sessione
+            st.session_state["user"] = {
+                "id": user_id,
+                "email": email,
+                "name": display_name
+            }
+            st.session_state["utente"] = email  # compat temporanea
+
+            st.success("✅ Registrazione completata!")
+            st.experimental_rerun()
+        else:
+            st.error("Errore durante la registrazione. Riprova.")
 
 def auth_block_on_landing():
     """
