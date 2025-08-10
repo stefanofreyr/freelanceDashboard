@@ -2,6 +2,7 @@
 import sqlite3
 import time
 import pathlib
+from pathlib import Path
 from typing import Optional, Dict
 import streamlit as st
 import bcrypt
@@ -9,7 +10,8 @@ import bcrypt
 # =========================
 # Config
 # =========================
-DB_PATH = r"C:\Users\ste_c\PycharmProjects\freelanceDashboard\data\fatture.db"
+BASE_DIR = Path(__file__).resolve().parents[1]
+DB_PATH = str(BASE_DIR / "data" / "fatture.db")
 
 SESSION_TTL = 60 * 60 * 8  # 8 ore
 ALLOW_SELF_SIGNUP = False  # False per i primi tester (crei tu gli account)

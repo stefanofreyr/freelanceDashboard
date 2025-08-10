@@ -3,7 +3,8 @@ import sqlite3
 import csv
 from pathlib import Path
 
-DB_PATH = r"C:\Users\ste_c\PycharmProjects\freelanceDashboard\data\fatture.db"
+BASE_DIR = Path(__file__).resolve().parents[1]
+DB_PATH = str(BASE_DIR / "data" / "fatture.db")
 OUT_FILE = Path("utenti.csv")
 
 def export_users():
