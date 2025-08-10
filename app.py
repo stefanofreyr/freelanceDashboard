@@ -2,7 +2,7 @@ import streamlit as st
 from modules import (landing, dashboard, invoices, clients, calendar,
                      documents, email_handler, automations, taxes, diagnostics, feedback)
 from utils import db
-from utils.auth import is_authenticated, logout_button
+from utils.auth import is_authenticated,require_auth, logout_button
 from modules.landing import inject_styles
 from streamlit_option_menu import option_menu
 
@@ -17,6 +17,13 @@ st.set_page_config(
 if not is_authenticated():
     landing.show()
     st.stop()
+
+# Utente loggato: controllo sessione valida
+user = require_auth()
+
+# Sidebar info + pulsante logout
+st.sidebar.caption(f"Utente: **{user['name']}**")
+logout_button(location="sidebar")  # SOLO qui
 
 st.markdown("""
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
@@ -181,9 +188,9 @@ else:
 
     # Sidebar: logout e navigazione
     with st.sidebar:
-        auth.logout_button()
-        st.markdown(f"✅ Utente: **{st.session_state['utente']}**")
-        st.markdown("### Navigazione")
+        # Sidebar info + pulsante logout
+        #st.sidebar.caption(f"Utente: **{user['name']}**")
+        #logout_button(location="sidebar")  # SOLO qui
 
         try:
             current_index = nav_keys.index(st.session_state.page)
@@ -222,7 +229,7 @@ else:
         if choice in nav_labels:
             st.session_state.page = nav_keys[nav_labels.index(choice)]
 
-        logout_button()
+
 
     # Mostra il contenuto della pagina selezionata
     if st.session_state.page == "dashboard":

@@ -118,9 +118,8 @@ def require_auth():
     return current_user()
 
 def logout_button(location: str = "sidebar"):
-    """Mostra un pulsante di Logout (di default in sidebar)."""
     area = st.sidebar if location == "sidebar" else st
-    if area.button("🚪 Esci"):
+    if area.button("🚪 Esci", key=f"logout_{location}"):
         st.session_state.clear()
         st.rerun()
 

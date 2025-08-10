@@ -4,7 +4,7 @@ from email.mime.text import MIMEText
 import tomllib  # Python 3.11+
 
 # Carica secrets.toml manualmente (senza lanciare tutta l'app Streamlit)
-with open(".streamlit/secrets.toml", "rb") as f:
+with open("../.streamlit/secrets.toml", "rb") as f:
     secrets = tomllib.load(f)
 
 smtp_server = secrets.get("SMTP_SERVER")
