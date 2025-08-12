@@ -7,6 +7,7 @@ from typing import Optional, Dict
 import streamlit as st
 import bcrypt
 import utils.db
+from utils import db
 from utils.db import get_user_by_email, init_users_table, create_user
 
 # =========================
@@ -45,6 +46,19 @@ def verify_login(email: str, password: str):
         return None
 
     return None
+# --- Just for TESTING
+def check_credentials(email: str, password: str) -> bool:
+    """Verifica credenziali email/password."""
+    user = db.get_user_by_email(email)
+    if not user:
+        return False
+    stored_hash = user.get("password_hash")
+    if not stored_hash:
+        return False
+    if isinstance(stored_hash, str):
+        stored_hash = stored_hash.encode("utf-8")
+    return bcrypt.checkpw(password.encode("utf-8"), stored_hash)
+
 
 # =========================
 # Session helpers

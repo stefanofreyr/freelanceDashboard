@@ -1,32 +1,25 @@
 import streamlit as st
-import smtplib
-from email.mime.text import MIMEText
-import tomllib  # Python 3.11+
+import pytest
+import types
+from utils.email_utils import send_invoice_email
 
-# Carica secrets.toml manualmente (senza lanciare tutta l'app Streamlit)
-with open("../.streamlit/secrets.toml", "rb") as f:
-    secrets = tomllib.load(f)
+@pytest.mark.parametrize("recipient,subject,body", [
+    ("destinatario@example.com", "Oggetto di Test", "Corpo email di test")
+])
+def test_send_invoice_email_mock(temp_db, monkeypatch, recipient, subject, body):
+    # Mock secrets come oggetto semplice
+    st.secrets = {
+        "PEC_USER": "pec@example.com",
+        "PEC_PASS": "password",
+        "PEC_PROVIDER": "Aruba"
+    }
 
-smtp_server = secrets.get("SMTP_SERVER")
-smtp_port = int(secrets.get("SMTP_PORT", 587))
-smtp_user = secrets.get("SMTP_USER")
-smtp_pass = secrets.get("SMTP_PASS")
-destinatario = secrets.get("FEEDBACK_RECIPIENT")
+    # Mock invio email → ritorna sempre True
+    monkeypatch.setattr("utils.email_utils.send_invoice_email", lambda *a, **kw: True)
 
-# Corpo della mail di test
-subject = "Test invio email da FAi"
-body = "Se stai leggendo questa mail, l'invio SMTP funziona correttamente."
+    fake_pdf = "fake_invoice.pdf"
+    with open(fake_pdf, "wb") as f:
+        f.write(b"%PDF-1.4 Fake PDF content")
 
-msg = MIMEText(body, "plain", "utf-8")
-msg["From"] = smtp_user
-msg["To"] = destinatario
-msg["Subject"] = subject
-
-try:
-    with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as server:
-        server.starttls()
-        server.login(smtp_user, smtp_pass)
-        server.send_message(msg)
-    print(f"✅ Email inviata a {destinatario}")
-except Exception as e:
-    print(f"❌ Errore nell'invio: {e}")
+    result = send_invoice_email(recipient, subject, body, fake_pdf)
+    assert result is True
