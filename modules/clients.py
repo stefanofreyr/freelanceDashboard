@@ -60,7 +60,7 @@ def show():
                 db.update_cliente(id_cliente, nome, email, pec, telefono, indirizzo, piva, cf, note)
                 st.success("✅ Cliente aggiornato.")
             else:
-                db.aggiungi_cliente(nome, email, pec, telefono, indirizzo, piva, cf, note, utente=utente, user_id=user_id)
+                db.aggiungi_cliente(nome, email, pec, telefono, indirizzo, piva, cf, note, utente=user["email"], user_id=user_id)
                 st.success("✅ Cliente aggiunto.")
             st.query_params.clear()
             st.rerun()
@@ -69,7 +69,7 @@ def show():
 
     # === LISTA CLIENTI RAGGRUPPATI ===
     search_query = st.text_input("🔍 Cerca cliente per nome")
-    clienti = db.lista_clienti(utente)
+    clienti = db.lista_clienti_by_user_id(user_id)
 
     if search_query:
         clienti = [c for c in clienti if search_query.lower() in c["nome"].lower()]
@@ -97,7 +97,7 @@ def show():
                         st.rerun()
 
                 with col3:
-                    fatture = db.fatture_per_cliente(c['nome'], utente)
+                    fatture = db.get_invoices_by_client_and_user_id(c['nome'], user_id)
                     if fatture:
                         with st.expander("📄 Fatture collegate"):
                             for f in fatture:

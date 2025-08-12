@@ -15,6 +15,7 @@ def init_db():
     init_settings_table()
     patch_add_user_id()
     backfill_user_id()
+    patch_add_indexes()
 
 def _conn():
     """Connessione SQLite con FK attive."""
@@ -324,6 +325,17 @@ def get_cliente_by_id(cliente_id):
     return dict(row) if row else None
 
 
+def get_invoices_by_client_and_user_id(cliente: str, user_id: int):
+    conn = sqlite3.connect(DB_NAME); c = conn.cursor()
+    rows = c.execute("""
+        SELECT * FROM invoices
+        WHERE cliente=? AND user_id=?
+        ORDER BY data DESC
+    """, (cliente, user_id)).fetchall()
+    conn.close()
+    return rows
+
+
 # === EVENTI ===
 
 def aggiungi_evento(titolo, data, ora, cliente, descrizione, utente=None, user_id=None):
@@ -486,6 +498,17 @@ def backfill_user_id():
             uid = users_map.get(email)
             if uid:
                 c.execute(f"UPDATE {tbl} SET user_id=? WHERE id=?", (uid, rowid))
+    conn.commit(); conn.close()
+
+
+def patch_add_indexes():
+    conn = sqlite3.connect(DB_NAME); c = conn.cursor()
+    c.execute("""
+      CREATE UNIQUE INDEX IF NOT EXISTS ux_invoices_num_anno_user
+      ON invoices (numero_fattura, anno, user_id)
+    """)
+    c.execute("CREATE INDEX IF NOT EXISTS ix_clienti_user_nome ON clienti (user_id, nome)")
+    c.execute("CREATE INDEX IF NOT EXISTS ix_eventi_user_data ON eventi (user_id, data)")
     conn.commit(); conn.close()
 
 

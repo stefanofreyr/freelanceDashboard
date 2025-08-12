@@ -7,11 +7,21 @@ from reportlab.lib.styles import getSampleStyleSheet
 import os
 
 def generate_invoice_pdf(fattura):
+    import streamlit as st
+    from utils import db
+
+    user = st.session_state.get("user") or {}
+    settings = db.get_settings(user.get("email")) or {}
+    rag_soc = settings.get("ragione_sociale") or user.get("name") or user.get("email")
+    indir = settings.get("indirizzo") or ""
+    piva = settings.get("piva") or st.secrets.get("PIVA_EMITTENTE", "IT01234567890")
+    iva_default = float(settings.get("iva_default") or 22.0)
+
     numero_fattura = fattura["numero_fattura"]
     cliente = fattura["cliente"]
     descrizione = fattura["descrizione"]
     importo = fattura["importo"]
-    iva = fattura["iva"]
+    iva = fattura.get("iva") or iva_default
     totale = fattura["totale"]
     data = fattura["data"]
     email = fattura["email"]
@@ -33,14 +43,14 @@ def generate_invoice_pdf(fattura):
 
     # Intestazione fiscale (mittente)
     intestazione = [
-        "FAi Solutions",
-        "1 Oxford Circus",
-        "P.IVA: 12345678901",
-        "Email: info@fai.com",
-        "Tel: +39 095 1234567"
+        rag_soc,
+        indir,
+        f"P.IVA: {piva}",
+        f"Email: {user.get('email')}",
     ]
     for riga in intestazione:
-        elements.append(Paragraph(riga, styles['Normal']))
+        if riga:
+            elements.append(Paragraph(riga, styles['Normal']))
     elements.append(Spacer(1, 20))
 
     # Titolo fattura

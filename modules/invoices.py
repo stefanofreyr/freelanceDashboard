@@ -44,24 +44,22 @@ def show():
 
     st.markdown("<div class='section-title'>➕ Nuova Fattura</div>", unsafe_allow_html=True)
 
+    settings = db.get_settings(user["email"]) or {}
+    iva_default = float(settings.get("iva_default") or 22.0)
+
     with st.form("fattura_form"):
         cliente = st.text_input("👤 Cliente")
         descrizione = st.text_area("🧾 Descrizione Servizio")
         importo = st.number_input("💰 Importo (€)", min_value=0.0, format="%.2f")
         data = st.date_input("📅 Data", value=datetime.date.today())
-        iva = st.number_input("🧾 IVA (%)", min_value=0.0, max_value=100.0, value=22.0)
+        iva = st.number_input("🧾 IVA (%)", min_value=0.0, max_value=100.0, value=iva_default, step=0.5)
         totale = importo * (1 + iva / 100)
         email_cliente = st.text_input("📧 Email Cliente")
 
         st.markdown(f"<b>Totale con IVA:</b> € {totale:.2f}", unsafe_allow_html=True)
 
-        submitted = st.form_submit_button("💾 Salva Fattura")
-        if submitted:
-            anno = int(str(data)[:4])
-            numero = db.get_next_invoice_number_for_year(utente, anno)
-            db.insert_invoice(numero, cliente, descrizione, importo, str(data), iva, totale, email_cliente,
-                              utente=utente, user_id=user_id, anno=anno)
-
+        submit = st.form_submit_button("💾 Salva Fattura")
+        if submit:
             errors = []
             if not cliente.strip():
                 errors.append("Il cliente è obbligatorio.")
@@ -72,8 +70,16 @@ def show():
             if email_cliente and not is_email(email_cliente):
                 errors.append("L'email cliente non è valida.")
             if errors:
-                for e in errors: st.warning(f"• {e}")
+                for e in errors:
+                    st.warning(f"• {e}")
                 st.stop()
+
+            anno = int(str(data)[:4])
+            numero = db.get_next_invoice_number_for_year_by_user_id(user_id, anno)  # 👈 versione user_id
+            db.insert_invoice(
+                numero, cliente, descrizione, importo, str(data), iva, totale, email_cliente,
+                utente=user["email"], user_id=user_id, anno=anno
+            )
             st.success("✅ Fattura salvata!")
 
     st.markdown("<div class='section-title'>📁 Archivio Fatture</div>", unsafe_allow_html=True)
