@@ -8,13 +8,20 @@ BASE_DIR = pathlib.Path(__file__).resolve().parents[1]
 DB_PATH = str(BASE_DIR / "data" / "fatture.db")
 
 def init_db():
+    # 1️⃣ Crea le tabelle base
     init_users_table()
     init_invoice_table()
     init_clienti_table()
     init_eventi_table()
     init_settings_table()
-    patch_add_user_id()
-    backfill_user_id()
+
+    # 2️⃣ Migrazioni schema
+    patch_add_user_id()        # Colonna user_id su tutte le tabelle
+    backfill_user_id()         # Popola user_id dove possibile
+
+    patch_invoices_add_year()  # Colonna anno + backfill da data
+
+    # 3️⃣ Indici (solo dopo che le colonne esistono)
     patch_add_indexes()
 
 def _conn():
@@ -455,14 +462,23 @@ def upsert_settings(email, **kwargs):
 
 
 def patch_invoices_add_year():
-    conn = sqlite3.connect(DB_NAME); c = conn.cursor()
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
     c.execute("PRAGMA table_info(invoices)")
     cols = [x[1] for x in c.fetchall()]
+
     if "anno" not in cols:
+        print("[DB PATCH] Colonna 'anno' mancante, la creo...")
         c.execute("ALTER TABLE invoices ADD COLUMN anno INTEGER")
-        # backfill da data
-        c.execute("UPDATE invoices SET anno = CAST(strftime('%Y', data) AS INTEGER) WHERE data IS NOT NULL")
+        c.execute("""
+            UPDATE invoices
+            SET anno = CAST(strftime('%Y', data) AS INTEGER)
+            WHERE data IS NOT NULL
+        """)
         conn.commit()
+    else:
+        print("[DB PATCH] Colonna 'anno' già presente")
+
     conn.close()
 
 

@@ -50,7 +50,7 @@ def show():
 
     st.markdown("---")
     st.markdown("## 💾 Stato Database")
-    db_path = "data/db.sqlite3"
+    db_path = "data/fatture.db"
     if os.path.exists(db_path):
         size_kb = os.path.getsize(db_path) / 1024
         st.success(f"Database trovato: {db_path} ({size_kb:.1f} KB)")
