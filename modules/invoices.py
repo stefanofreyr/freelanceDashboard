@@ -112,9 +112,32 @@ def show():
                 _by_name[k.lower()] = c
         nomi_clienti = sorted([name for name in (c["nome"] for c in _by_name.values()) if name])
 
-        # 2) Dropdown + opzione nuovo cliente
-        opzioni = ["➕ Nuovo cliente..."] + nomi_clienti
-        scelta_cliente = st.selectbox("👤 Cliente", options=opzioni)
+        # 2) Raggruppamento per iniziale + dropdown cliente (con "Nuovo..." sempre disponibile)
+        def _initial(name: str) -> str:
+            name = (name or "").strip()
+            if not name:
+                return "#"
+            ch = name[0].upper()
+            return ch if "A" <= ch <= "Z" else "#"
+
+        iniziali = sorted({_initial(n) for n in nomi_clienti})
+        col_c1, col_c2 = st.columns([1, 2])
+
+        # selettore iniziale (persistiamo lo stato per una UX stabile)
+        lettera_sel = col_c1.selectbox(
+            "Iniziale",
+            options=["Tutte"] + iniziali,
+            index=0,
+            key="clienti_iniziale"
+        )
+
+        if lettera_sel == "Tutte":
+            filtrati = nomi_clienti
+        else:
+            filtrati = [n for n in nomi_clienti if _initial(n) == lettera_sel]
+
+        opzioni = ["➕ Nuovo cliente..."] + filtrati
+        scelta_cliente = col_c2.selectbox("👤 Cliente", options=opzioni, index=0)
 
         if scelta_cliente == "➕ Nuovo cliente...":
             cliente = st.text_input("Nuovo cliente", placeholder="Es. Mario Rossi SRL")
@@ -126,6 +149,14 @@ def show():
                 "📧 Email Cliente",
                 value=(_by_name.get(cliente.lower(), {}).get("email") or "")
             )
+
+        # (Facoltativo ma utile) vista rapida rubrica raggruppata
+        with st.expander("📒 Rubrica (A‑Z)", expanded=False):
+            from itertools import groupby
+            for iniziale, gruppetto in groupby(nomi_clienti, key=_initial):
+                gruppetto = list(gruppetto)
+                st.markdown(f"**{iniziale}** — {len(gruppetto)}")
+                st.markdown(", ".join(gruppetto))
 
         descrizione = st.text_area("🧾 Descrizione Servizio", placeholder="Consulenza sviluppo software — Sprint agosto")
         importo = st.number_input("💰 Imponibile (€)", min_value=0.0, format="%.2f")
@@ -258,7 +289,7 @@ def show():
         count = len(filtered)
         total = sum(float(f.get("totale") or 0.0) for f in filtered)
         colf3.metric("Fatture", count)
-        colf4.metric("Totale", f"€ {total:,.2f}".replace(",", " ").replace(".", ",").replace(" ", "."))  # formato EU
+        colf4.metric("Totale", f"€ {total:,.2f}".replace(",", " ").replace(".", ",").replace(" ", ""))  # formato EU
 
         # export CSV (rispetta filtri)
         csv_data = _export_invoices_csv(filtered)

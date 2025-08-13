@@ -5,7 +5,22 @@ import re
 import csv
 import io
 from utils import db
+import unicodedata as _ud
+from itertools import groupby
 from collections import defaultdict
+
+def _strip_accents(s: str) -> str:
+    # Rimuove diacritici (es. "À" -> "A"), robusto per alfabeti EU
+    return "".join(ch for ch in _ud.normalize("NFKD", s) if not _ud.combining(ch))
+
+
+def _initial(name: str) -> str:
+    s = _strip_accents((name or "").strip())
+    if not s:
+        return "#"
+    ch = s[0].upper()
+    return ch if "A" <= ch <= "Z" else "#"
+
 
 def export_clients_to_csv(user_id: int):
     clienti = db.lista_clienti_by_user_id(user_id)
@@ -220,32 +235,55 @@ def show():
     else:
         clienti.sort(key=lambda x: x["_ultima_fattura"] or _dt.date(1900, 1, 1), reverse=True)
 
-    # === Rendering elenco
-    for c in clienti:
-        riga = f"**{c['nome']}** — {c['email'] or '—'}"
-        sub = []
-        if c["_ultima_fattura"]:
-            sub.append(f"ultima fattura: {c['_ultima_fattura'].isoformat()}")
-        sub.append(f"fatture 12 mesi: {c['_fatture_12m']}")
-        st.markdown(f"- {riga}  \n  <span style='color:#64748b'>{' • '.join(sub)}</span>", unsafe_allow_html=True)
+    # === Rendering elenco raggruppato per lettera iniziale ===
+    from collections import defaultdict
 
-        col1, col2, col3 = st.columns([1, 1, 4])
-        with col1:
-            if st.button("✏️", key=f"mod_{c['id']}"):
-                st.query_params.update({"id": c['id']})
-                st.rerun()
-        with col2:
-            if st.button("🗑️", key=f"del_{c['id']}"):
-                db.elimina_cliente(c['id'])
-                st.success(f"🗑️ Cliente '{c['nome']}' eliminato.")
-                st.rerun()
-        with col3:
-            fatt_cli = db.get_invoices_by_client_and_user_id(c['nome'], user_id) if hasattr(db, "get_invoices_by_client_and_user_id") else []
-            if fatt_cli:
-                with st.expander("📄 Fatture collegate"):
-                    # fatt_cli presumibilmente è una lista di tuple
-                    for f in fatt_cli:
-                        num = f[1]; data = f[5]; tot = f[7]
-                        st.markdown(f"- Fattura **n. {num}** del {data} — €{tot:.2f}")
-            else:
-                st.info("Nessuna fattura collegata.")
+    # Mostra contatore totale clienti
+    st.markdown(f"### 📊 Totale clienti trovati: **{len(clienti)}**")
+
+    # Costruisci i gruppi per lettera
+    gruppi = defaultdict(list)
+    for c in clienti:
+        if c["nome"]:
+            lettera = c["nome"][0].upper()
+        else:
+            lettera = "#"
+        gruppi[lettera].append(c)
+
+    # Ordina lettere e clienti all'interno di ogni gruppo
+    for lettera in sorted(gruppi.keys()):
+        with st.expander(f"{lettera} ({len(gruppi[lettera])} clienti)", expanded=False):
+            for c in sorted(gruppi[lettera], key=lambda x: (x["nome"] or "").lower()):
+                riga = f"**{c['nome']}** — {c['email'] or '—'}"
+                sub = []
+                if c["_ultima_fattura"]:
+                    sub.append(f"ultima fattura: {c['_ultima_fattura'].isoformat()}")
+                sub.append(f"fatture 12 mesi: {c['_fatture_12m']}")
+                st.markdown(
+                    f"- {riga}  \n  <span style='color:#64748b'>{' • '.join(sub)}</span>",
+                    unsafe_allow_html=True
+                )
+
+                col1, col2, col3 = st.columns([1, 1, 4])
+                with col1:
+                    if st.button("✏️", key=f"mod_{c['id']}"):
+                        st.query_params.update({"id": c['id']})
+                        st.rerun()
+                with col2:
+                    if st.button("🗑️", key=f"del_{c['id']}"):
+                        db.elimina_cliente(c['id'])
+                        st.success(f"🗑️ Cliente '{c['nome']}' eliminato.")
+                        st.rerun()
+                with col3:
+                    fatt_cli = db.get_invoices_by_client_and_user_id(c['nome'], user_id) if hasattr(db,
+                                                                                                    "get_invoices_by_client_and_user_id") else []
+                    if fatt_cli:
+                        with st.expander("📄 Fatture collegate", expanded=False):
+                            for f in fatt_cli:
+                                num = f[1];
+                                data = f[5];
+                                tot = f[7]
+                                st.markdown(f"- Fattura **n. {num}** del {data} — €{tot:.2f}")
+                    else:
+                        st.info("Nessuna fattura collegata.")
+
