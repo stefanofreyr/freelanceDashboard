@@ -42,22 +42,52 @@ def show():
         eventi_settimana = [e for e in eventi if oggi <= datetime.date.fromisoformat(e["data"]) <= prossima_settimana]
 
         if eventi_settimana:
+            oggi = datetime.date.today()
+            inizio_settimana = oggi - datetime.timedelta(days=oggi.weekday())
             giorni_settimana = {}
-            for e in eventi_settimana:
-                giorno = datetime.date.fromisoformat(e["data"]).strftime("%A %d/%m")
-                giorni_settimana.setdefault(giorno, []).append(e)
+            for i in range(7):
+                giorno = inizio_settimana + datetime.timedelta(days=i)
+                giorni_settimana[giorno] = db.get_eventi_per_data(utente, str(giorno))
 
-            for giorno in sorted(giorni_settimana):
-                st.markdown(f"### 📅 {giorno}")
-                for e in sorted(giorni_settimana[giorno], key=lambda x: x["ora"]):
-                    st.markdown(f"- ⏰ **{e['ora']}** — **{e['titolo']}**")
-                    if e["cliente"]:
-                        st.markdown(f"  👤 Cliente: {e['cliente']}")
-                    if e["descrizione"]:
-                        st.markdown(f"  📝 {e['descrizione']}")
+            for giorno, eventi_giorno in giorni_settimana.items():
+                st.markdown(f"### {giorno.strftime('%A %d/%m/%Y')}")
+                if eventi_giorno:
+                    for e in sorted(eventi_giorno, key=lambda x: x["ora"]):
+                        st.markdown(f"- ⏰ **{e['ora']}** — **{e['titolo']}**")
+                        if e["cliente"]:
+                            st.markdown(f"  👤 Cliente: {e['cliente']}")
+                        if e["descrizione"]:
+                            st.markdown(f"  📝 {e['descrizione']}")
+
+                        col_mod, col_del = st.columns(2)
+                        with col_mod:
+                            if st.button("✏️ Modifica", key=f"edit_{e['id']}"):
+                                with st.form(f"edit_form_{e['id']}"):
+                                    new_titolo = st.text_input("Titolo", e["titolo"])
+                                    new_data = st.date_input("Data", datetime.date.fromisoformat(e["data"]))
+                                    new_ora = st.time_input("Ora", datetime.datetime.strptime(e["ora"], "%H:%M").time())
+                                    clienti = db.lista_clienti(utente)
+                                    new_cliente = st.selectbox(
+                                        "Cliente (opzionale)",
+                                        [""] + [c["nome"] for c in clienti],
+                                        index=([""] + [c["nome"] for c in clienti]).index(e["cliente"] or "")
+                                    )
+                                    new_descrizione = st.text_area("Descrizione", e["descrizione"] or "")
+                                    if st.form_submit_button("Salva modifiche"):
+                                        db.update_evento(e["id"], new_titolo, new_data, new_ora, new_cliente,
+                                                         new_descrizione)
+                                        st.success("✅ Evento aggiornato!")
+                                        st.rerun()
+                        with col_del:
+                            if st.button("🗑️ Elimina", key=f"del_{e['id']}"):
+                                db.elimina_evento(e["id"])
+                                st.warning("❌ Evento eliminato!")
+                                st.rerun()
+
         else:
             st.info("Nessun evento previsto per i prossimi 7 giorni.")
 
+    # === VISTA MENSILE ===
     # === VISTA MENSILE ===
     elif vista == "Vista Mensile":
         st.subheader("📅 Vista Mensile")
@@ -65,7 +95,11 @@ def show():
         with col1:
             anno = st.selectbox("Anno", options=[oggi.year, oggi.year + 1], index=0)
         with col2:
-            mese = st.selectbox("Mese", options=list(range(1, 13)), format_func=lambda m: datetime.date(1900, m, 1).strftime('%B'))
+            mese = st.selectbox(
+                "Mese",
+                options=list(range(1, 13)),
+                format_func=lambda m: datetime.date(1900, m, 1).strftime('%B')
+            )
 
         num_giorni = monthrange(anno, mese)[1]
         giorni_eventi = {}
@@ -86,8 +120,35 @@ def show():
                             st.markdown(f"  👤 Cliente: {ev['cliente']}")
                         if ev["descrizione"]:
                             st.markdown(f"  📝 {ev['descrizione']}")
+
+                        col_mod, col_del = st.columns(2)
+                        with col_mod:
+                            if st.button("✏️ Modifica", key=f"edit_mensile_{ev['id']}"):
+                                with st.form(f"edit_form_mensile_{ev['id']}"):
+                                    new_titolo = st.text_input("Titolo", ev["titolo"])
+                                    new_data = st.date_input("Data", datetime.date.fromisoformat(ev["data"]))
+                                    new_ora = st.time_input("Ora",
+                                                            datetime.datetime.strptime(ev["ora"], "%H:%M").time())
+                                    clienti = db.lista_clienti(utente)
+                                    new_cliente = st.selectbox(
+                                        "Cliente (opzionale)",
+                                        [""] + [c["nome"] for c in clienti],
+                                        index=([""] + [c["nome"] for c in clienti]).index(ev["cliente"] or "")
+                                    )
+                                    new_descrizione = st.text_area("Descrizione", ev["descrizione"] or "")
+                                    if st.form_submit_button("Salva modifiche"):
+                                        db.update_evento(ev["id"], new_titolo, new_data, new_ora, new_cliente,
+                                                         new_descrizione)
+                                        st.success("✅ Evento aggiornato!")
+                                        st.rerun()
+                        with col_del:
+                            if st.button("🗑️ Elimina", key=f"del_mensile_{ev['id']}"):
+                                db.elimina_evento(ev["id"])
+                                st.warning("❌ Evento eliminato!")
+                                st.rerun()
             else:
                 st.markdown(f"📅 {label} – Nessun evento")
+
 
     # === PROMEMORIA AUTOMATICI (sidebar) ===
     st.sidebar.markdown("### 🔔 Reminder")

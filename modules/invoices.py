@@ -100,33 +100,74 @@ def show():
     settings = db.get_settings(user["email"]) or {}
     iva_default = float(settings.get("iva_default") or 22.0)
 
-    # === FORM NUOVA FATTURA ===
+    # === FORM NUOVA FATTURA (con dropdown clienti) ===
     with st.form("fattura_form"):
-        cliente = st.text_input("👤 Cliente", placeholder="Es. Mario Rossi SRL")
+        # 1) Carico clienti esistenti dell'utente
+        _clienti = db.lista_clienti_by_user_id(user_id) or []
+        # dedup case-insensitive per sicurezza
+        _by_name = {}
+        for c in _clienti:
+            k = (c.get("nome") or "").strip()
+            if k and k.lower() not in _by_name:
+                _by_name[k.lower()] = c
+        nomi_clienti = sorted([name for name in (c["nome"] for c in _by_name.values()) if name])
+
+        # 2) Dropdown + opzione nuovo cliente
+        opzioni = ["➕ Nuovo cliente..."] + nomi_clienti
+        scelta_cliente = st.selectbox("👤 Cliente", options=opzioni)
+
+        if scelta_cliente == "➕ Nuovo cliente...":
+            cliente = st.text_input("Nuovo cliente", placeholder="Es. Mario Rossi SRL")
+            email_cliente = st.text_input("📧 Email Cliente", placeholder="fatture@azienda.it")
+        else:
+            cliente = scelta_cliente
+            # precompilo email se presente a DB
+            email_cliente = st.text_input(
+                "📧 Email Cliente",
+                value=(_by_name.get(cliente.lower(), {}).get("email") or "")
+            )
+
         descrizione = st.text_area("🧾 Descrizione Servizio", placeholder="Consulenza sviluppo software — Sprint agosto")
         importo = st.number_input("💰 Imponibile (€)", min_value=0.0, format="%.2f")
         data = st.date_input("📅 Data", value=datetime.date.today())
         iva = st.number_input("🧾 IVA (%)", min_value=0.0, max_value=100.0, value=iva_default, step=0.5)
         totale = importo * (1 + iva / 100)
-        email_cliente = st.text_input("📧 Email Cliente", placeholder="fatture@azienda.it")
         st.markdown(f"<b>Totale con IVA:</b> € {totale:.2f}", unsafe_allow_html=True)
 
         submit = st.form_submit_button("💾 Salva Fattura")
         if submit:
+            # 3) Validazioni
             errors = []
-            if not cliente.strip():
+            if not (cliente or "").strip():
                 errors.append("Il cliente è obbligatorio.")
             if importo <= 0:
                 errors.append("L'importo deve essere maggiore di 0.")
             if not (0 <= iva <= 100):
                 errors.append("L'IVA deve essere tra 0 e 100.")
+            # email cliente è opzionale, ma se presente deve essere valida
             if email_cliente and not is_email(email_cliente):
                 errors.append("L'email cliente non è valida.")
+
             if errors:
                 for e in errors:
                     st.warning(f"• {e}")
                 st.stop()
 
+            # 4) Se cliente nuovo, salvalo anche in rubrica (così appare nel dropdown la prossima volta)
+            if scelta_cliente == "➕ Nuovo cliente...":
+                try:
+                    db.aggiungi_cliente(
+                        nome=cliente,
+                        email=email_cliente,
+                        pec=None, telefono=None, indirizzo=None,
+                        piva=None, cf=None, note=None,
+                        utente=user["email"], user_id=user_id
+                    )
+                except Exception:
+                    # Non blocco l'inserimento della fattura se fallisce l'insert del cliente
+                    pass
+
+            # 5) Inserimento fattura
             anno = int(str(data)[:4])
             numero = db.get_next_invoice_number_for_year_by_user_id(user_id, anno)
             db.insert_invoice(
@@ -138,7 +179,7 @@ def show():
                         user_id, numero, anno, cliente, totale)
             st.success("✅ Fattura salvata!")
 
-            # 📧 Email di conferma a sé stessi (SOLO fuori test)
+            # 6) (Come prima) Email di conferma a sé stessi — solo fuori test
             if not is_test_mode():
                 try:
                     nuova_fattura = {
@@ -168,7 +209,8 @@ def show():
                         logger.warning("invoice_confirmation_email_failed user_id=%s numero=%s", user_id, numero)
                         st.warning("⚠️ Non sono riuscito a inviare la conferma via email.")
                 except Exception as ex:
-                    logger.exception("invoice_confirmation_email_error user_id=%s numero=%s err=%s", user_id, numero, ex)
+                    logger.exception("invoice_confirmation_email_error user_id=%s numero=%s err=%s", user_id, numero,
+                                     ex)
                     st.warning("⚠️ Errore durante l'invio della conferma via email.")
 
     # === ARCHIVIO / TOOLBAR ===

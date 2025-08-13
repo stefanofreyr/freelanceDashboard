@@ -1,4 +1,4 @@
-guida_sicilia/
+freelanceDashboard/
 ├── app.py
 ├── modules/
 │   ├── dashboard.py
@@ -16,4 +16,11 @@ guida_sicilia/
 ├── utils/
 │   └── pdf_generator.py
 │   └── email_utils.py
+│   └── db.py
+│   └── auth.py
+│   └── fatturapa_generator.py
+│   └── logging_setup.py
+│   └── sdi_sender.py
+
 └── requirements.txt
+

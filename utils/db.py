@@ -346,16 +346,25 @@ def get_invoices_by_client_and_user_id(cliente: str, user_id: int):
 # === EVENTI ===
 
 def aggiungi_evento(titolo, data, ora, cliente, descrizione, utente=None, user_id=None):
+    # 🔹 Conversione formati compatibili con SQLite
+    if hasattr(data, "strftime"):  # datetime.date o datetime.datetime
+        data = data.strftime("%Y-%m-%d")
+    if hasattr(ora, "strftime"):   # datetime.time
+        ora = ora.strftime("%H:%M")
+
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     if user_id is None and utente:
         user_id = get_user_id_by_email(utente)
+
     c.execute('''
         INSERT INTO eventi (titolo, data, ora, cliente, descrizione, utente, user_id)
         VALUES (?, ?, ?, ?, ?, ?, ?)
     ''', (titolo, data, ora, cliente, descrizione, utente, user_id))
+
     conn.commit()
     conn.close()
+
 
 
 def lista_eventi_futuri(utente):
@@ -414,12 +423,61 @@ def eventi_in_scadenza(utente):
     } for r in rows]
 
 
+def update_evento(evento_id, titolo, data, ora, cliente, descrizione):
+    if hasattr(data, "strftime"):
+        data = data.strftime("%Y-%m-%d")
+    if hasattr(ora, "strftime"):
+        ora = ora.strftime("%H:%M")
+
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("""
+        UPDATE eventi
+        SET titolo = ?, data = ?, ora = ?, cliente = ?, descrizione = ?
+        WHERE id = ?
+    """, (titolo, data, ora, cliente, descrizione, evento_id))
+    conn.commit()
+    conn.close()
+
+
 def elimina_evento(evento_id):
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
     c.execute("DELETE FROM eventi WHERE id = ?", (evento_id,))
     conn.commit()
     conn.close()
+
+
+def get_eventi_per_data(utente, data):
+    """Ritorna tutti gli eventi di un utente per una specifica data."""
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("""
+        SELECT * FROM eventi
+        WHERE utente = ?
+        AND data = ?
+        ORDER BY ora ASC
+    """, (utente, data))
+    risultati = [dict(row) for row in c.fetchall()]
+    conn.close()
+    return risultati
+
+
+def get_eventi_per_intervallo(utente, data_inizio, data_fine):
+    """Ritorna tutti gli eventi di un utente in un intervallo di date."""
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("""
+        SELECT * FROM eventi
+        WHERE utente = ?
+        AND data BETWEEN ? AND ?
+        ORDER BY data ASC, ora ASC
+    """, (utente, data_inizio, data_fine))
+    risultati = [dict(row) for row in c.fetchall()]
+    conn.close()
+    return risultati
 
 
 # === SETTINGS ===

@@ -198,7 +198,7 @@ def show_pricing():
         ("Invio PEC a SDI", ["❌", "✅", "✅"]),
         ("Calendario e promemoria", ["❌", "✅", "✅"]),
         ("Backup cloud", ["❌", "✅ settimanale", "✅ giornaliero"]),
-        ("PEC personalizzata", ["❌", "❌", "✅"]),
+        ("Automazioni smart", ["❌", "❌", "✅"]),
         ("Supporto prioritario", ["❌", "❌", "✅"]),
         ("PDF personalizzati", ["❌", "❌", "✅"]),
         ("Statistiche avanzate", ["❌", "❌", "✅"]),

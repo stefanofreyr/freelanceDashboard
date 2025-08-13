@@ -9,13 +9,31 @@ def _get_emitter_data():
     settings = db.get_settings(user.get("email")) or {}
     rag_soc = settings.get("ragione_sociale") or user.get("name") or user.get("email")
     indir = settings.get("indirizzo") or ""
-    piva = settings.get("piva") or st.secrets.get("PIVA_EMITTENTE", "IT01234567890")
+    try:
+        piva = settings.get("piva") or (
+            st.secrets.get("PIVA_EMITTENTE") if hasattr(st, "secrets") else None) or "IT01234567890"
+    except Exception:
+        piva = settings.get("piva") or "IT01234567890"
     return rag_soc, indir, piva
 
 def generate_fattura_xml(fattura: dict) -> str:
     numero = str(fattura["numero_fattura"])
     rag_soc, indir, piva = _get_emitter_data()
-    iva_default = float(db.get_settings(st.session_state["user"]["email"]).get("iva_default") or 22.0)
+
+    # Recupero sicuro di user e settings
+    user = (st.session_state.get("user") or {})
+    settings = db.get_settings(user.get("email")) or {}
+
+    # IVA di default: priorità a quella della fattura (se presente), altrimenti settings, altrimenti 22.0
+    def _to_float(x, fallback=None):
+        try:
+            return float(x)
+        except Exception:
+            return fallback
+
+    iva_default = _to_float(fattura.get("iva"), None)
+    if iva_default is None:
+        iva_default = _to_float(settings.get("iva_default"), 22.0)
 
     os.makedirs("invoices_xml", exist_ok=True)
     filename = f"{piva}_Fattura_{numero}.xml"
