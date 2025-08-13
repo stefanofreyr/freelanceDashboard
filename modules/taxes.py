@@ -3,7 +3,7 @@ import streamlit as st
 from utils import db
 
 def show():
-    st.title("📊 Calcolo Tasse - Regime Forfettario (MVP)")
+    st.title("📊 Calcolo Tasse - Forfettario")
 
     if "utente" not in st.session_state:
         st.warning("⚠️ Effettua il login per accedere.")
