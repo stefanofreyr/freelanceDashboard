@@ -6,6 +6,11 @@ import utils.auth
 from utils.auth import is_authenticated, require_auth, logout_button
 from modules.landing import inject_styles
 from streamlit_option_menu import option_menu
+from utils.logging_setup import setup_logging, get_app_logger
+
+setup_logging()
+log = get_app_logger()
+log.info("app_boot")
 
 # Config pagina
 st.set_page_config(

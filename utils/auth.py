@@ -9,6 +9,8 @@ import bcrypt
 import utils.db
 from utils import db
 from utils.db import get_user_by_email, init_users_table, create_user
+from utils.logging_setup import get_app_logger, get_security_logger
+
 
 # =========================
 # Config
@@ -24,16 +26,22 @@ ALLOW_SELF_SIGNUP = False  # False per i primi tester (crei tu gli account)
 # =========================
 def verify_login(email: str, password: str):
     """Verifica le credenziali e restituisce il dict utente completo se valide, altrimenti None."""
+    app_log = get_app_logger()
+    sec_log = get_security_logger()
+
     if not email or not password:
+        sec_log.info("login_failed email=%s reason=missing_fields", (email or "").strip().lower())
         return None
 
     norm = (email or "").strip().lower()
     user = get_user_by_email(norm)
     if not user:
+        sec_log.info("login_failed email=%s reason=not_found", norm)
         return None
 
     stored_hash = user.get("password_hash")
     if not stored_hash:
+        sec_log.warning("login_failed email=%s reason=missing_hash", norm)
         return None
 
     if isinstance(stored_hash, str):
@@ -41,11 +49,18 @@ def verify_login(email: str, password: str):
 
     try:
         if bcrypt.checkpw(password.encode(), stored_hash):
+            app_log.info("login_success email=%s id=%s", user["email"], user.get("id"))
             return user
+        else:
+            sec_log.info("login_failed email=%s reason=wrong_password", norm)
+            return None
     except ValueError:
+        sec_log.error("login_failed email=%s reason=hash_error", norm)
         return None
 
     return None
+
+
 # --- Just for TESTING
 def check_credentials(email: str, password: str) -> bool:
     """Verifica credenziali email/password."""
@@ -98,12 +113,14 @@ def require_auth():
             }
             return st.session_state["user"]
 
+    get_security_logger().warning("access_blocked reason=no_session")
     st.stop()
 
 
 def logout_button(location: str = "sidebar"):
     area = st.sidebar if location == "sidebar" else st
     if area.button("🚪 Esci", key=f"logout_{location}"):
+        get_app_logger().info("logout")
         st.session_state.clear()
         st.rerun()
 

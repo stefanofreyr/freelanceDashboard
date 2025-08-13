@@ -11,17 +11,7 @@ from utils.sdi_sender import send_via_pec
 from utils.email_utils import send_invoice_email
 from modules.landing import inject_styles
 from utils.email_utils import is_test_mode
-
-def _get_app_logger():
-    logger = logging.getLogger("app")
-    if not logger.handlers:
-        logger.setLevel(logging.INFO)
-        os.makedirs("logs", exist_ok=True)
-        fh = RotatingFileHandler("logs/app.log", maxBytes=1_000_000, backupCount=3, encoding="utf-8")
-        fmt = logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s")
-        fh.setFormatter(fmt)
-        logger.addHandler(fh)
-    return logger
+from utils.logging_setup import get_app_logger
 
 def _norm_invoice(row):
     """Accetta dict (nuovo) o tuple/list (legacy) e restituisce un dict uniforme."""
@@ -76,7 +66,7 @@ def _export_invoices_csv(invoices: list[dict]) -> str:
 
 
 def show():
-    logger = _get_app_logger()
+    logger = get_app_logger()
 
     def is_email(s: str) -> bool:
         return bool(re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", (s or "").strip()))
