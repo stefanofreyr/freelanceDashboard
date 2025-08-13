@@ -1,5 +1,5 @@
 import streamlit as st
-from modules import (landing, dashboard, invoices, clients, usercalendar,
+from modules import (landing, dashboard, invoices, clients, usercalendar, chat_ai,
                      documents, email_handler, automations, taxes, diagnostics, feedback, settings)
 from utils import db
 import utils.auth
@@ -96,9 +96,9 @@ st.markdown("""
 
 # === Utente autenticato: mostra il menu di navigazione ===
 # Definizione pagine + icone per option_menu
-nav_keys   = ["dashboard", "invoices", "usercalendar", "clients", "documents", "emails", "automations", "taxes", "settings", "diagnostics", "feedback"]
-nav_labels = ["Dashboard", "Fatture", "Calendario", "Clienti", "Documenti", "Email", "Automazioni", "Tasse", "Impostazioni", "Diagnostica", "Feedback"]
-nav_icons  = ["speedometer2", "receipt", "calendar-event", "people", "folder", "envelope", "cpu", "cash", "gear", "wrench", "chat"]
+nav_keys   = ["dashboard", "invoices", "usercalendar", "clients", "documents", "chat_ai", "emails", "automations", "taxes", "settings", "diagnostics", "feedback"]
+nav_labels = ["Dashboard", "Fatture", "Calendario", "Clienti", "Documenti", "Assistente AI", "Email", "Automazioni", "Tasse", "Impostazioni", "Diagnostica", "Feedback"]
+nav_icons  = ["speedometer2", "receipt", "calendar-event", "people", "folder", "robot", "envelope", "cpu", "cash", "gear", "wrench", "chat"]
 
 # Sidebar: logout e navigazione
 with st.sidebar:
@@ -149,6 +149,8 @@ elif st.session_state.page == "clients":
     clients.show()
 elif st.session_state.page == "documents":
     documents.show()
+elif st.session_state.page == "chat_ai":
+    chat_ai.show()
 elif st.session_state.page == "emails":
     email_handler.show()
 elif st.session_state.page == "automations":

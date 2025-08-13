@@ -35,6 +35,29 @@ def _ai_generate(prompt: str, temperature: float = 0.2, max_tokens: int = 600) -
             "\n\nResto a disposizione per eventuali chiarimenti.\n\nCordiali saluti,\nIl tuo nome"
         )
 
+    full_prompt = f"""
+    Sei un assistente commerciale esperto nella stesura di email formali in italiano
+    per liberi professionisti e piccole imprese. Scrivi email chiare, professionali e sintetiche,
+    evitando frasi generiche e mantenendo un tono formale ma cordiale.
+
+    FORMATTAZIONE:
+    - Fornisci direttamente il testo finale, senza spiegazioni.
+    - Struttura:
+      Oggetto: [titolo email]
+      Corpo:
+      [testo email, massimo 8 frasi, paragrafi brevi]
+      Firma:
+      [firma]
+
+    CONTESTO SPECIFICO:
+    {prompt}
+
+    RICORDA:
+    - Usa frasi brevi e precise.
+    - Evita anglicismi inutili.
+    - Chiudi sempre con una call-to-action chiara.
+    """
+
     # ---- 1) Tentativo con OpenAI ----
     try:
         from openai import OpenAI
@@ -44,8 +67,8 @@ def _ai_generate(prompt: str, temperature: float = 0.2, max_tokens: int = 600) -
             resp = client.chat.completions.create(
                 model=st.secrets.get("OPENAI_MODEL", "gpt-4o-mini"),
                 messages=[
-                    {"role": "system", "content": "Sei un assistente per freelance italiani. Scrivi email pronte da inviare, chiare e sintetiche."},
-                    {"role": "user", "content": prompt},
+                    {"role": "system", "content": "Sei un assistente commerciale esperto in comunicazione formale in italiano per liberi professionisti. Scrivi email chiare, professionali e sintetiche, evitando frasi generiche."},
+                    {"role": "user", "content": full_prompt},
                 ],
                 temperature=temperature,
                 max_tokens=max_tokens,
@@ -69,8 +92,8 @@ def _ai_generate(prompt: str, temperature: float = 0.2, max_tokens: int = 600) -
                     "model": model_name,
                     "messages": [
                         {"role": "system",
-                         "content": "Sei un assistente per freelance italiani. Scrivi email pronte da inviare, chiare e sintetiche."},
-                        {"role": "user", "content": prompt},
+                         "content": "Sei un assistente commerciale esperto in comunicazione formale in italiano per liberi professionisti. Scrivi email chiare, professionali e sintetiche, evitando frasi generiche."},
+                        {"role": "user", "content": full_prompt},
                     ],
                     "temperature": temperature,
                     "max_tokens": max_tokens,
