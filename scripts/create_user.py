@@ -13,7 +13,7 @@ USERS = [
     ("francesca.greco@fai.test", "pass1234", "Francesca Greco"),
     ("matteo.romano@fai.test",   "pass1234", "Matteo Romano"),
     ("elisa.ferrari@fai.test",   "pass1234", "Elisa Ferrari"),
-    ("max.tristi@fai.test",      "pass1234", "Max Tristi"),
+    ("stefano@fai.test",         "pass1234", "Stefano Castiglione"),
     ("castcla@fai.test",         "pass1234", "Claudio Castiglione"),
     ("cosimo@fai.test",          "pass1234", "Cosimo Dini"),
     ("clelia@fai.test",          "pass1234", "Clelia Dini")
