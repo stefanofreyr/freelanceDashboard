@@ -1,18 +1,15 @@
 """
-scripts/create_users.py
+scripts/init_users.py
 
-Crea utenti di test in maniera sicura:
-- Evita duplicati usando INSERT OR IGNORE
-- Usa timeout per ridurre 'database is locked'
-- Chiude sempre la connessione
-- Può essere richiamato più volte senza effetti collaterali
+- Controlla la tabella `users` e aggiunge la colonna `name` se manca.
+- Crea utenti di test evitando duplicati (INSERT OR IGNORE).
 """
 
 import sqlite3
 import os
-from utils.db import DB_PATH  # Percorso assoluto al tuo database SQLite
+from utils.db import DB_PATH  # Percorso al tuo DB SQLite
 
-# Lista di tuple: (email, password, nome visualizzato)
+# Lista utenti di test
 USERS = [
     ("anna.rossi@fai.test",      "pass1234", "Anna Rossi"),
     ("luca.bianchi@fai.test",    "pass1234", "Luca Bianchi"),
@@ -29,6 +26,25 @@ USERS = [
     ("cosimo@fai.test",          "pass1234", "Cosimo Dini"),
     ("clelia@fai.test",          "pass1234", "Clelia Dini")
 ]
+
+def ensure_name_column():
+    """Verifica se la colonna `name` esiste, altrimenti la aggiunge."""
+    conn = sqlite3.connect(DB_PATH, timeout=10)
+    cur = conn.cursor()
+
+    # Recupera info colonne
+    cur.execute("PRAGMA table_info(users)")
+    columns = [col[1] for col in cur.fetchall()]
+
+    # Se manca 'name', aggiungila
+    if "name" not in columns:
+        print("Colonna `name` mancante: aggiungo...")
+        cur.execute("ALTER TABLE users ADD COLUMN name TEXT NOT NULL DEFAULT ''")
+        conn.commit()
+    else:
+        print("Colonna `name` già presente.")
+
+    conn.close()
 
 def create_user(email, password, name):
     """Crea un utente, ignorando se già esiste."""
@@ -50,7 +66,8 @@ def create_user(email, password, name):
     conn.close()
 
 if __name__ == "__main__":
-    # Evita duplicazioni in ambienti che ricaricano il codice (es. Streamlit)
+    ensure_name_column()
+
     if not os.environ.get("USERS_INITIALIZED"):
         for email, pwd, name in USERS:
             try:
